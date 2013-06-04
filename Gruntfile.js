@@ -34,10 +34,16 @@ module.exports = function(grunt) {
       },
       dist: {
         src: [
-          'dist/_bower.js',
           'lib/angular-weekly.js',
         ],
         dest: 'dist/angular-weekly.js'
+      },
+      full: {
+        src: [
+          'dist/_bower.js',
+          'lib/angular-weekly.js'
+        ],
+        dest: 'dist/angular-weekly.full.js'
       }
     },
     uglify: {
@@ -47,6 +53,10 @@ module.exports = function(grunt) {
       dist: {
         src: 'dist/angular-weekly.js',
         dest: 'dist/angular-weekly.min.js'
+      },
+      full: {
+        src: 'dist/angular-weekly.full.js',
+        dest: 'dist/angular-weekly.full.min.js'
       }
     },
     clean: [
