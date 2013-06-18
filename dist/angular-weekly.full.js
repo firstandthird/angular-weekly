@@ -1,69 +1,53 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.1
+ * v0.0.3
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
 */
+/*global jQuery */
 /*!
- * template - A simple javascript template engine.
- * v0.2.0
- * https://github.com/jgallen23/template
- * copyright Greg Allen 2013
- * MIT License
+* FitText.js 1.1
+*
+* Copyright 2011, Dave Rupert http://daverupert.com
+* Released under the WTFPL license
+* http://sam.zoy.org/wtfpl/
+*
+* Date: Thu May 05 14:23:00 2011 -0600
 */
-//template.js
-//modified version of john resig's micro templating
-//http://ejohn.org/blog/javascript-micro-templating/
 
-(function(w){
-  var oldRef = w.template;
-  var cache = {};
+(function( $ ){
 
-  opts = {
-    openTag: '<%',
-    closeTag: '%>'
+  $.fn.fitText = function( kompressor, options ) {
+
+    // Setup options
+    var compressor = kompressor || 1,
+        settings = $.extend({
+          'minFontSize' : Number.NEGATIVE_INFINITY,
+          'maxFontSize' : Number.POSITIVE_INFINITY
+        }, options);
+
+    return this.each(function(){
+
+      // Store the object
+      var $this = $(this);
+
+      // Resizer() resizes items based on the object width divided by the compressor * 10
+      var resizer = function () {
+        $this.css('font-size', Math.max(Math.min($this.width() / (compressor*10), parseFloat(settings.maxFontSize)), parseFloat(settings.minFontSize)));
+      };
+
+      // Call once to set.
+      resizer();
+
+      // Call on resize. Opera debounces their resize by default.
+      $(window).on('resize.fittext orientationchange.fittext', resizer);
+
+    });
+
   };
 
-  var template = function tmpl(str, data){
-    // Figure out if we're getting a template, or if we need to
-    // load the template - and be sure to cache the result.
-    var fn = !/\W/.test(str) ?
-      cache[str] = cache[str] ||
-        tmpl(str) :
-
-      // Generate a reusable function that will serve as a template
-      // generator (and which will be cached).
-      new Function("obj",
-        "var p=[],print=function(){p.push.apply(p,arguments);};" +
-
-        // Introduce the data as local variables using with(){}
-        "with(obj){p.push('" +
-
-        // Convert the template into pure JavaScript
-        str
-          .replace(/[\r\t\n]/g, " ")
-          .split(opts.openTag).join("\t")
-          .replace(new RegExp("((^|"+opts.closeTag+")[^\t]*)'", 'g'), "$1\r")
-          .replace(new RegExp("\t=(.*?)"+opts.closeTag, 'g'), "',$1,'")
-          .split("\t").join("');")
-          .split(opts.closeTag).join("p.push('")
-          .split("\r").join("\\'") + "');}return p.join('');");
-
-    // Provide some basic currying to the user
-    return data ? fn( data ) : fn;
-  };
-
-  template.options = opts;
-  template.noConflict = function() {
-    w.template = oldRef;
-    return template;
-  };
-
-  w.template = template;
-})(window);
-
-
+})( jQuery );
 /*!
  * fidel - a ui view controller
  * v2.2.1
@@ -255,6 +239,63 @@ Fidel.onPostInit = function(fn) {
 
 w.Fidel = Fidel;
 })(window, window.jQuery || window.Zepto);
+/*!
+ * template - A simple javascript template engine.
+ * v0.2.0
+ * https://github.com/jgallen23/template
+ * copyright Greg Allen 2013
+ * MIT License
+*/
+//template.js
+//modified version of john resig's micro templating
+//http://ejohn.org/blog/javascript-micro-templating/
+
+(function(w){
+  var oldRef = w.template;
+  var cache = {};
+
+  opts = {
+    openTag: '<%',
+    closeTag: '%>'
+  };
+
+  var template = function tmpl(str, data){
+    // Figure out if we're getting a template, or if we need to
+    // load the template - and be sure to cache the result.
+    var fn = !/\W/.test(str) ?
+      cache[str] = cache[str] ||
+        tmpl(str) :
+
+      // Generate a reusable function that will serve as a template
+      // generator (and which will be cached).
+      new Function("obj",
+        "var p=[],print=function(){p.push.apply(p,arguments);};" +
+
+        // Introduce the data as local variables using with(){}
+        "with(obj){p.push('" +
+
+        // Convert the template into pure JavaScript
+        str
+          .replace(/[\r\t\n]/g, " ")
+          .split(opts.openTag).join("\t")
+          .replace(new RegExp("((^|"+opts.closeTag+")[^\t]*)'", 'g'), "$1\r")
+          .replace(new RegExp("\t=(.*?)"+opts.closeTag, 'g'), "',$1,'")
+          .split("\t").join("');")
+          .split(opts.closeTag).join("p.push('")
+          .split("\r").join("\\'") + "');}return p.join('');");
+
+    // Provide some basic currying to the user
+    return data ? fn( data ) : fn;
+  };
+
+  template.options = opts;
+  template.noConflict = function() {
+    w.template = oldRef;
+    return template;
+  };
+
+  w.template = template;
+})(window);
 
 /*!
  * fidel-template - A fidel plugin to render a clientside template
@@ -272,10 +313,9 @@ w.Fidel = Fidel;
     this.el.html(Fidel.template(tmpl, data));
   };
 })(window.Fidel);
-
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.1
+ * v0.0.8
  * https://github.com/jgallen23/weekly
  * copyright Greg Allen 2013
  * MIT License
@@ -289,7 +329,10 @@ w.Fidel = Fidel;
       weekOffset: 0,
       currentDate: new Date(),
       autoRender: true,
-      template: '<div class="days"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="day" style="width:<%= 100/dates.length %>%" data-date="<%= date.getFullYear() %>-<%= date.getMonth() %>-<%= date.getDate() %>"><%= date.toDateString() %></div><% } %></div><div class="times"><% for (var i = 0; i < times.length; i++) { var time = times[i]; %>  <div class="time" data-time="<%= time %>"><%= time %></div><% } %></div><div class="grid"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="day" style="width:<%= 100/dates.length %>%" data-date="<%= date.getFullYear() %>-<%= date.getMonth() %>-<%= date.getDate() %>">    <% for (var ii = 0; ii < times.length; ii++) { var time = times[ii]; %>      <div class="time" data-time="<%= time %>">&nbsp;</div>    <% } %>  </div><% } %></div>'
+      fitText: true,
+      fitTextMin: 11,
+      fitTextMax: 15,
+      template: '<div class="weekly-time-navigation">  <button class="weekly-previous-week weekly-change-week-button" data-action="prevWeek">&laquo; <span class="week"></span></button>  <button class="weekly-next-week weekly-change-week-button" data-action="nextWeek"><span class="week"></span> &raquo;</button>  <button class="weekly-jump-today weekly-change-today-button" data-action="jumpToday">Today</button>  <div class="weekly-header"></div></div><div class="weekly-days"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <%= timef(\'%D %m/%d\', date) %>  </div><% } %></div><div class="weekly-times"><% for (var i = 0; i < times.length; i++) { var time = times[i]; %>  <div class="weekly-time" data-time="<%= time %>"><%= time %></div><% } %></div><div class="weekly-grid"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <% for (var ii = 0; ii < times.length; ii++) { var time = times[ii]; %>      <div class="weekly-time" data-time="<%= time %>">&nbsp;</div>    <% } %>  </div><% } %></div>'
     },
 
     init: function() {
@@ -302,6 +345,9 @@ w.Fidel = Fidel;
 
     update: function() {
       this.render({
+        timef: this.timef,
+        getWeekSpan: this.proxy(this.getWeekSpan),
+        currentDate: this.currentDate,
         dates: this.getDates(),
         times: this.getTimes()
       });
@@ -315,12 +361,30 @@ w.Fidel = Fidel;
       this.registerClickToCreate();
 
       this.highlightToday();
+
+      if(!this.weekOffset) {
+        this.el.find(".weekly-change-today-button").css('display', 'none');
+      } else {
+        this.el.find(".weekly-change-today-button").css('display', 'block');
+      }
+
+      this.el.find('.weekly-time-navigation .weekly-previous-week .week').html(this.getWeekSpan(this.currentDate, this.weekOffset - 1));
+      this.el.find('.weekly-time-navigation .weekly-next-week .week').html(this.getWeekSpan(this.currentDate, this.weekOffset + 1));
+
+      this.el.find('.weekly-time-navigation .weekly-header').html(this.getWeekSpan(this.currentDate, this.weekOffset));
+
+      if (this.fitText) {
+        this.el.find(".weekly-days .weekly-day, .weekly-times .weekly-time").fitText(1, {
+          'minFontSize': this.fitTextMin,
+          'maxFontSize': this.fitTextMax
+        });
+      }
     },
 
     highlightToday: function() {
       var today = new Date();
 
-      this.el.find('[data-date="' + this.timef('%Y-%n-%j', today) + '"]').addClass('today');
+      this.el.find('[data-date="' + this.timef('%Y-%n-%j', today) + '"]').addClass('weekly-today');
     },
 
     registerClickToCreate: function() {
@@ -328,12 +392,13 @@ w.Fidel = Fidel;
       this.pendingEvent = null;
       this.pendingEventStart = null;
 
-      var gridDays = this.el.find('.grid .day');
+      var gridDays = this.el.find('.weekly-grid .weekly-day');
 
       // Make sure anything previously bound is bound no more.
-      gridDays.unbind('mousedown mousemove mouseup mouseout');
+      gridDays.unbind('mousedown mousemove mouseup mouseout click');
 
       gridDays.on('mousedown', this.proxy(function(event){
+        if(event.which !== 1 || $(event.target).is('.weekly-dragger')) return;
         this.mouseDown = true;
 
         if(this.pendingEvent) {
@@ -363,36 +428,14 @@ w.Fidel = Fidel;
 
       gridDays.on('mousemove', this.proxy(function(event){
         if(this.mouseDown) {
-          var target = $(event.currentTarget);
-          var targetOffset = target.offset();
-          var mouseOffsetTop = event.clientY - targetOffset.top;
-          var dayHeight = $(event.currentTarget).height();
-          var hourHeight = Math.round(dayHeight / this.timeDifference);
+          this.createEvent(event);
+        }
+      }));
 
-          var tempStart = Math.floor(mouseOffsetTop / hourHeight) * hourHeight;
-          var tempEnd = Math.ceil(mouseOffsetTop / hourHeight) * hourHeight;
-
-          if(this.pendingEventStart === null) {
-            this.pendingEventStart = tempStart;
-          }
-
-          if(this.pendingEventEnd === null || tempEnd > this.pendingEventStart) {
-            this.pendingEventEnd = tempEnd;
-          }
-
-          if(!this.pendingEvent) {
-            target.append('<div class="event-pending"></div>');
-            this.pendingEvent = target.find('.event-pending');
-            this.pendingEvent.data('date', target.data('date'));
-          }
-
-          this.pendingEvent.css({
-            top: this.pendingEventStart,
-            bottom: dayHeight - this.pendingEventEnd
-          });
-
-          this.pendingEvent.data('starttime', ((this.pendingEventStart / hourHeight) || 0) + this.startTime);
-          this.pendingEvent.data('endtime', ((this.pendingEventEnd / hourHeight) || 1) + this.startTime);
+      gridDays.on('click', this.proxy(function(event){
+        if($(event.target).is('.weekly-time,.weekly-day')) {
+          this.createEvent(event);
+          gridDays.trigger('mouseup');
         }
       }));
 
@@ -403,17 +446,139 @@ w.Fidel = Fidel;
       }));
     },
 
+    registerModifyEvent: function() {
+      this.mouseDown = false;
+      this.pendingEvent = null;
+      this.pendingEventStart = null;
+
+      var eventDraggers = this.el.find('.weekly-grid .weekly-dragger');
+
+      // Make sure anything previously bound is bound no more.
+      eventDraggers.unbind('mousedown mousemove mouseup mouseout click');
+
+      eventDraggers.on('mousedown', this.proxy(function(event){
+        if(event.which !== 1) return;
+        this.mouseDown = true;
+
+        this.eventOffset = 0;
+      }));
+
+      gridDays.on('mouseup', this.proxy(function(){
+        this.mouseDown = false;
+
+        if(this.eventOffset) {
+          var eventData = this.pendingEvent.data();
+
+          this.eventOffset = 0;
+        }
+      }));
+
+      gridDays.on('mousemove', this.proxy(function(event){
+        if(this.mouseDown) {
+          this.createEvent(event);
+        }
+      }));
+
+      gridDays.on('click', this.proxy(function(event){
+        if($(event.target).is('.weekly-time,.weekly-day')) {
+          this.createEvent(event);
+          gridDays.trigger('mouseup');
+        }
+      }));
+
+      gridDays.on('mouseleave', this.proxy(function(event){
+        if(this.mouseDown) {
+          gridDays.trigger('mouseup');
+        }
+      }));
+    },
+
+    createEvent: function(event) {
+      var target = $(event.currentTarget);
+      var targetOffset = target.parent().offset();
+      var mouseOffsetTop = event.pageY - targetOffset.top;
+      var dayHeight = $(event.currentTarget).height();
+      var hourHeight = Math.round(dayHeight / this.timeDifference);
+
+      var tempStart = Math.floor(mouseOffsetTop / hourHeight) * hourHeight;
+      var tempEnd = Math.ceil(mouseOffsetTop / hourHeight) * hourHeight;
+
+      if(this.pendingEventStart === null) {
+        this.pendingEventStart = tempStart;
+      }
+
+      if(this.pendingEventEnd === null || tempEnd > this.pendingEventStart) {
+        this.pendingEventEnd = tempEnd;
+      }
+
+      if(!this.pendingEvent) {
+        target.append('<div class="weekly-event-pending"></div>');
+        this.pendingEvent = target.find('.weekly-event-pending');
+        this.pendingEvent.data('date', target.data('date'));
+      }
+
+      this.pendingEvent.css({
+        top: this.pendingEventStart,
+        bottom: dayHeight - this.pendingEventEnd
+      });
+
+      this.pendingEvent.data('starttime', ((this.pendingEventStart / hourHeight) || 0) + this.startTime);
+      this.pendingEvent.data('endtime', ((this.pendingEventEnd / hourHeight) || 1) + this.startTime);
+    },
+
+    modifyEvent: function(event) {
+      var target = $(event.currentTarget);
+      var targetOffset = target.parent().offset();
+      var mouseOffsetTop = event.pageY - targetOffset.top;
+      var dayHeight = $(event.currentTarget).height();
+      var hourHeight = Math.round(dayHeight / this.timeDifference);
+
+      var tempStart = Math.floor(mouseOffsetTop / hourHeight) * hourHeight;
+      var tempEnd = Math.ceil(mouseOffsetTop / hourHeight) * hourHeight;
+
+      console.log(tempStart, tempEnd);
+    },
+
+    getWeekSpan: function(date, offset) {
+      var first = this.getFirstDayOfWeek(date, offset);
+      var last = this.getLastDayOfWeek(date, offset);
+
+      var span = this.timef('%M %d', first) + ' - ';
+      if (first.getMonth() == last.getMonth()) {
+        span += this.timef('%d', last);
+      } else {
+        span += this.timef('%M %d', last);
+      }
+      return span;
+    },
+
+    getFirstDayOfWeek: function(date, offset) {
+      offset = offset || 0;
+      var first = date.getDate() - date.getDay();
+      var newDate = new Date(date.getTime());
+      newDate.setDate(first + (offset * 7));
+      return newDate;
+    },
+
+    getLastDayOfWeek: function(date, weekOffset) {
+      weekOffset = weekOffset || 0;
+      var first = date.getDate() - date.getDay();
+      var newDate = new Date(date.getTime());
+      newDate.setDate(first + 6 + (weekOffset * 7));
+      return newDate;
+    },
+
     getDates: function() {
       var curr = this.currentDate;
 
-      var first = curr.getDate() - curr.getDay();
       var daysInWeek = 7;
 
       var days = [];
-      var sunday = new Date(curr.setDate(first + (this.weekOffset * daysInWeek)));
+      var sunday = this.getFirstDayOfWeek(curr, this.weekOffset);
 
       for (var i = 0, c = daysInWeek; i < c; i++) {
-        var d = new Date(sunday.setDate(sunday.getDate() - sunday.getDay() + i));
+        var d = new Date(sunday.getTime());
+        d.setDate(d.getDate() - d.getDay() + i);
         days.push(d);
       }
       return days;
@@ -436,19 +601,25 @@ w.Fidel = Fidel;
     },
 
     nextWeek: function() {
-      this.changeDate(7);
+      this.changeDate(1);
     },
 
     prevWeek: function() {
-      this.changeDate(-7);
+      this.changeDate(-1);
     },
 
-    changeDate: function(offsetDays) {
-      this.currentDate.setDate(this.currentDate.getDate() + offsetDays);
+    jumpToday: function() {
+      this.changeDate(0);
+    },
 
-      if (this.autoRender) {
-        this.update();
+    changeDate: function(offsetWeek) {
+      if(!offsetWeek) {
+        this.weekOffset = 0;
+      } else {
+        this.weekOffset += offsetWeek;
       }
+
+      this.update();
     },
 
     renderEvent: function(event) {
@@ -460,16 +631,31 @@ w.Fidel = Fidel;
       var topOffset = 100 - this.getTimeOffsetPercent(startTime);
       var bottomOffset = this.getTimeOffsetPercent(endTime);
 
-      var eventTemplate = $('<div class="event"></div>');
+      var eventTemplate = $('<div class="weekly-event"></div>');
 
       eventTemplate.data(event);
 
       eventTemplate.css({
         top: topOffset + '%',
         bottom: bottomOffset + '%'
-      }).append('<a href="#" data-action="removeEvent" class="delete">×</a><div class="event-title">' + startTime + '</div><div class="event-name">' + event.name + '</div><div class="event-desc">' + event.description + '</div>');
+      }).append([
+        '<button data-action="removeEvent" class="weekly-delete">×</button>',
+        '<div class="weekly-event-title">' + this.timef('%g:%i %a', event.start) + ' -<br>' + this.timef('%g:%i %a', event.end) + '</div>',
+        '<div class="weekly-event-name">' + event.name + '</div>',
+        '<div class="weekly-event-desc">' + event.description + '</div>',
+        '<div class="weekly-dragger"></div>'
+      ].join(''));
 
-      this.el.find('.grid .day[data-date="' + startDate + '"]').append(eventTemplate);
+      var selectedDay = this.el.find('.weekly-grid .weekly-day[data-date="' + startDate + '"]');
+
+      selectedDay.append(eventTemplate);
+
+      if (this.fitText) {
+        selectedDay.find(".weekly-event").fitText(1, {
+          'minFontSize': this.fitTextMin,
+          'maxFontSize': this.fitTextMax
+        });
+      }
     },
 
     toFraction: function(time) {
@@ -544,11 +730,11 @@ w.Fidel = Fidel;
           case '%A':
             return time.getHours() > 11 ? 'PM' : 'AM';
           case '%g':
-            return time.getHours() > 11 ? time.getHours() -12 : time.getHours();
+            return time.getHours() > 12 ? time.getHours() -12 : time.getHours();
           case '%G':
           return time.getHours();
           case '%h':
-            return ("0" + (time.getHours() > 11 ? time.getHours() -12 : time.getHours())).substr(-2,2);
+            return ("0" + (time.getHours() > 12 ? time.getHours() -12 : time.getHours())).substr(-2,2);
           case '%H':
             return ("0" + time.getHours()).substr(-2,2);
           case '%i':
@@ -564,6 +750,13 @@ w.Fidel = Fidel;
     },
 
     addEvent: function(event) {
+      if(event instanceof Array) {
+        for(var i = 0, c = event.length; i < c; i++) {
+          this.addEvent(event[i]);
+        }
+        return;
+      }
+
       event = $.extend({
         name: '',
         description: '',
@@ -571,7 +764,7 @@ w.Fidel = Fidel;
         end: null
       }, event);
 
-      event.id = this.events.length;
+      event._index = this.events.length;
 
       this.renderEvent(event);
       this.events.push(event);
@@ -580,15 +773,23 @@ w.Fidel = Fidel;
     },
 
     removeEvent: function(e) {
-      var el = $(e.target).parents('.event');
+      var el = $(e.target).parents('.weekly-event');
       var event = el.data();
 
-      this.events.splice(event.id, 1);
+      this.events.splice(event._index, 1);
       el.remove();
 
       this.el.trigger('removeEvent', event);
 
       return false;
+    },
+
+    clearEvents: function() {
+      this.el.find('.weekly-event').remove();
+
+      this.events = [];
+
+      this.el.trigger('clearEvents');
     }
   });
 
@@ -597,11 +798,31 @@ w.Fidel = Fidel;
 (function() {
   var app = angular.module('weekly', []);
 
-  app.directive('weekly', function() {
+  app.directive('weekly', function($parse) {
     return {
       restrict: 'EA',
-      link: function(scope, el) {
-        el.addClass('weekly').weekly();
+      require: 'ngModel',
+      link: function(scope, el, args, model) {
+        var addEventFn = $parse(args.weeklyAdd);
+        var removeEventFn = $parse(args.weeklyRemove);
+        el
+          .addClass('weekly')
+          .weekly()
+          .on('addEvent', function(e, evnt) {
+            //update model value
+            addEventFn(scope, { event: evnt });
+          })
+          .on('removeEvent', function(e, evnt) {
+            removeEventFn(scope, { event: evnt });
+          });
+
+        if (args.ngModel) {
+          scope.$watch(args.ngModel, function(val) {
+            el
+              .weekly('clearEvents')
+              .weekly('addEvent', val);
+          }, true);
+        }
       }
     };
   });
