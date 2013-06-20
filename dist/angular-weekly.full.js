@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.3
+ * v0.0.4
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -315,7 +315,7 @@ w.Fidel = Fidel;
 })(window.Fidel);
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.8
+ * v0.0.9
  * https://github.com/jgallen23/weekly
  * copyright Greg Allen 2013
  * MIT License
@@ -344,13 +344,14 @@ w.Fidel = Fidel;
     },
 
     update: function() {
-      this.render({
+      var data = {
         timef: this.timef,
         getWeekSpan: this.proxy(this.getWeekSpan),
         currentDate: this.currentDate,
         dates: this.getDates(),
         times: this.getTimes()
-      });
+      };
+      this.render(data);
 
       for(var i = 0, c = this.events.length; i < c; i++) {
         this.renderEvent(this.events[i]);
@@ -379,6 +380,7 @@ w.Fidel = Fidel;
           'maxFontSize': this.fitTextMax
         });
       }
+      this.emit('weekChange', { dates: data.dates, times: data.times });
     },
 
     highlightToday: function() {
@@ -805,16 +807,20 @@ w.Fidel = Fidel;
       link: function(scope, el, args, model) {
         var addEventFn = $parse(args.weeklyAdd);
         var removeEventFn = $parse(args.weeklyRemove);
+        var weekChangeEventFn = $parse(args.weeklyChange);
         el
           .addClass('weekly')
-          .weekly()
+          .on('weekChange', function(e, data) {
+            weekChangeEventFn(scope, { data: data });
+          })
           .on('addEvent', function(e, evnt) {
             //update model value
             addEventFn(scope, { event: evnt });
           })
           .on('removeEvent', function(e, evnt) {
             removeEventFn(scope, { event: evnt });
-          });
+          })
+          .weekly();
 
         if (args.ngModel) {
           scope.$watch(args.ngModel, function(val) {
