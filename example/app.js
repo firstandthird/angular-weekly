@@ -33,6 +33,10 @@ var MainController = function($scope) {
     $scope.events.push(event3);
   }
 
+  $scope.weekChanged = function(data) {
+    console.log('week changed', data);
+  }
+
   $scope.$watch('events', function() {
     console.log('events changed', arguments);
   }, true);

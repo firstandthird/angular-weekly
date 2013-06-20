@@ -16,7 +16,7 @@
   </head>
   <body>
     <div ng-controller="MainController">
-      <div weekly ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)"></div>
+      <div weekly ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)"></div>
       <button ng-click="addAnotherEvent()">Add Event</button>
     </div>
   </body>
