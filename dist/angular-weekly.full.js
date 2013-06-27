@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.5
+ * v0.0.6
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -315,7 +315,7 @@ w.Fidel = Fidel;
 })(window.Fidel);
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.9
+ * v0.0.10
  * https://github.com/jgallen23/weekly
  * copyright Greg Allen 2013
  * MIT License
@@ -332,7 +332,8 @@ w.Fidel = Fidel;
       fitText: true,
       fitTextMin: 11,
       fitTextMax: 15,
-      template: '<div class="weekly-time-navigation">  <button class="weekly-previous-week weekly-change-week-button" data-action="prevWeek">&laquo; <span class="week"></span></button>  <button class="weekly-next-week weekly-change-week-button" data-action="nextWeek"><span class="week"></span> &raquo;</button>  <button class="weekly-jump-today weekly-change-today-button" data-action="jumpToday">Today</button>  <div class="weekly-header"></div></div><div class="weekly-days"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <%= timef(\'%D %m/%d\', date) %>  </div><% } %></div><div class="weekly-times"><% for (var i = 0; i < times.length; i++) { var time = times[i]; %>  <div class="weekly-time" data-time="<%= time %>"><%= time %></div><% } %></div><div class="weekly-grid"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <% for (var ii = 0; ii < times.length; ii++) { var time = times[ii]; %>      <div class="weekly-time" data-time="<%= time %>">&nbsp;</div>    <% } %>  </div><% } %></div>'
+      template: '<div class="weekly-time-navigation">  <button class="weekly-previous-week weekly-change-week-button" data-action="prevWeek">&laquo; <span class="week"></span></button>  <button class="weekly-next-week weekly-change-week-button" data-action="nextWeek"><span class="week"></span> &raquo;</button>  <button class="weekly-jump-today weekly-change-today-button" data-action="jumpToday">Today</button>  <div class="weekly-header"></div></div><div class="weekly-days"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <%= timef(\'%D %m/%d\', date) %>  </div><% } %></div><div class="weekly-times"><% for (var i = 0; i < times.length; i++) { var time = times[i]; %>  <div class="weekly-time" data-time="<%= time %>"><%= time %></div><% } %></div><div class="weekly-grid"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <% for (var ii = 0; ii < times.length; ii++) { var time = times[ii]; %>      <div class="weekly-time" data-time="<%= time %>">&nbsp;</div>    <% } %>  </div><% } %></div>',
+      readOnly: false
     },
 
     init: function() {
@@ -359,7 +360,10 @@ w.Fidel = Fidel;
 
       this.timeDifference = (this.endTime + 13) - this.startTime;
 
-      this.registerClickToCreate();
+      if(!this.readOnly) {
+        this.registerClickToCreate();
+        this.registerModifyEvent();
+      }
 
       this.highlightToday();
 
@@ -449,48 +453,39 @@ w.Fidel = Fidel;
     },
 
     registerModifyEvent: function() {
-      this.mouseDown = false;
-      this.pendingEvent = null;
-      this.pendingEventStart = null;
+      this.mouseModifyDown = false;
 
-      var eventDraggers = this.el.find('.weekly-grid .weekly-dragger');
+      var eventDraggers = this.el.find('.weekly-grid');
+
+      this.currentDragger = null;
 
       // Make sure anything previously bound is bound no more.
-      eventDraggers.unbind('mousedown mousemove mouseup mouseout click');
+      eventDraggers.find('.weekly-dragger').unbind('mousedown mousemove mouseup mouseout click');
 
-      eventDraggers.on('mousedown', this.proxy(function(event){
+      eventDraggers.on('mousedown', '.weekly-dragger', this.proxy(function(event){
         if(event.which !== 1) return;
-        this.mouseDown = true;
+        this.mouseModifyDown = true;
+
+        this.currentDragger = $(event.target);
 
         this.eventOffset = 0;
       }));
 
-      gridDays.on('mouseup', this.proxy(function(){
-        this.mouseDown = false;
+      eventDraggers.on('mouseup', '.weekly-day', this.proxy(function(){
+        this.mouseModifyDown = false;
 
-        if(this.eventOffset) {
-          var eventData = this.pendingEvent.data();
+        this.currentDragger = null;
+      }));
 
-          this.eventOffset = 0;
+      eventDraggers.on('mousemove', '.weekly-day', this.proxy(function(event){
+        if(this.mouseModifyDown) {
+          this.modifyEvent(event);
         }
       }));
 
-      gridDays.on('mousemove', this.proxy(function(event){
-        if(this.mouseDown) {
-          this.createEvent(event);
-        }
-      }));
-
-      gridDays.on('click', this.proxy(function(event){
-        if($(event.target).is('.weekly-time,.weekly-day')) {
-          this.createEvent(event);
-          gridDays.trigger('mouseup');
-        }
-      }));
-
-      gridDays.on('mouseleave', this.proxy(function(event){
-        if(this.mouseDown) {
-          gridDays.trigger('mouseup');
+      eventDraggers.on('mouseleave', this.proxy(function(event){
+        if(this.mouseModifyDown) {
+          this.currentDragger.trigger('mouseup');
         }
       }));
     },
@@ -529,16 +524,28 @@ w.Fidel = Fidel;
     },
 
     modifyEvent: function(event) {
-      var target = $(event.currentTarget);
+      var target = this.currentDragger.parents('.weekly-event');
       var targetOffset = target.parent().offset();
       var mouseOffsetTop = event.pageY - targetOffset.top;
       var dayHeight = $(event.currentTarget).height();
       var hourHeight = Math.round(dayHeight / this.timeDifference);
 
-      var tempStart = Math.floor(mouseOffsetTop / hourHeight) * hourHeight;
       var tempEnd = Math.ceil(mouseOffsetTop / hourHeight) * hourHeight;
 
-      console.log(tempStart, tempEnd);
+      if(tempEnd < (targetOffset.top + dayHeight)) {
+        target.css({
+          bottom: dayHeight - tempEnd
+        });
+      }
+
+      var duration = target.outerHeight() / hourHeight;
+      var end = new Date(target.data('start'));
+      end.setHours(end.getHours() + duration);
+      target.data('end', end);
+
+      this.events[target.data('_index')].end = end;
+
+      this.el.trigger('modifyEvent', this.events[target.data('_index')]);
     },
 
     getWeekSpan: function(date, offset) {
@@ -807,25 +814,38 @@ w.Fidel = Fidel;
           var addEventFn = $parse(args.weeklyAdd);
           var removeEventFn = $parse(args.weeklyRemove);
           var weekChangeEventFn = $parse(args.weeklyChange);
+          var isUpdating = false;
           el
             .addClass('weekly')
             .on('weekChange', function(e, data) {
               weekChangeEventFn(scope, { data: data });
             })
             .on('addEvent', function(e, evnt) {
-              //update model value
-              addEventFn(scope, { event: evnt });
+              if (!isUpdating) {
+                scope.$apply(function() {
+                  scope[args.ngModel].push(evnt);
+                });
+                addEventFn(scope, { event: evnt });
+              }
             })
             .on('removeEvent', function(e, evnt) {
-              removeEventFn(scope, { event: evnt });
+              if (!isUpdating) {
+                var index = evnt._index;
+                scope.$apply(function() {
+                  scope[args.ngModel].splice(index, 1);
+                });
+                removeEventFn(scope, { event: evnt });
+              }
             })
             .weekly();
 
           if (args.ngModel) {
             scope.$watch(args.ngModel, function(val) {
+              isUpdating = true;
               el
                 .weekly('clearEvents')
                 .weekly('addEvent', val);
+              isUpdating = false;
             }, true);
           }
         }
