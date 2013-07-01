@@ -1,7 +1,7 @@
 {
   "name": "angular-weekly",
   "description": "Weekly Calendar Angular directive",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "homepage": "https://github.com/jgallen23/angular-weekly/",
   "license": "MIT",
   "copyright": "Greg Allen",

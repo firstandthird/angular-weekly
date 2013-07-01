@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.6
+ * v0.0.7
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -15,6 +15,7 @@
           var addEventFn = $parse(args.weeklyAdd);
           var removeEventFn = $parse(args.weeklyRemove);
           var weekChangeEventFn = $parse(args.weeklyChange);
+          var options = $parse(args.weekly)();
           var isUpdating = false;
           el
             .addClass('weekly')
@@ -38,7 +39,7 @@
                 removeEventFn(scope, { event: evnt });
               }
             })
-            .weekly();
+            .weekly(options);
 
           if (args.ngModel) {
             scope.$watch(args.ngModel, function(val) {
