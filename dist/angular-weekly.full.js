@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.8
+ * v0.0.9
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -313,11 +313,161 @@
 })(window.Fidel);
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.11
+ * v0.0.13
  * https://github.com/jgallen23/weekly
  * copyright Greg Allen 2013
  * MIT License
 */
+/**
+ * Date helpers
+ */
+
+(function(w){
+  var oldRef = w.dateUtils;
+
+  var dateUtils = {
+    noConflict: function() {
+      w.dateUtils = oldRef;
+      return dateUtils;
+    },
+    getFirstDayOfWeek: function(date, offset) {
+      offset = offset || 0;
+      var first = date.getDate() - date.getDay();
+      var newDate = new Date(date.getTime());
+      newDate.setDate(first + (offset * 7));
+      return newDate;
+    },
+    getLastDayOfWeek: function(date, weekOffset) {
+      weekOffset = weekOffset || 0;
+      var first = date.getDate() - date.getDay();
+      var newDate = new Date(date.getTime());
+      newDate.setDate(first + 6 + (weekOffset * 7));
+      return newDate;
+    },
+    getdateUtils: function(date, weekOffset) {
+      var daysInWeek = 7;
+
+      var days = [];
+      var sunday = this.getFirstDayOfWeek(date, weekOffset);
+
+      for (var i = 0, c = daysInWeek; i < c; i++) {
+        var d = new Date(sunday.getTime());
+        d.setDate(d.getDate() - d.getDay() + i);
+        days.push(d);
+      }
+      return days;
+    },
+    getTimes: function(startTime, endTime) {
+      var end = endTime + 12;
+
+      var times = [];
+      for (var i = startTime; i <= end; i++) {
+        var hour = (i > 12) ? i - 12 : i;
+        var timeString = hour+':00 ';
+
+        timeString += (i > 11) ? 'PM' : 'AM';
+
+        times.push(timeString);
+      }
+
+      return times;
+    },
+    getWeekSpan: function(date, offset) {
+      var first = this.getFirstDayOfWeek(date, offset);
+      var last = this.getLastDayOfWeek(date, offset);
+
+      var span = TimeFormat('%M %d', first) + ' - ';
+      if (first.getMonth() == last.getMonth()) {
+        span += TimeFormat('%d', last);
+      } else {
+        span += TimeFormat('%M %d', last);
+      }
+      return span;
+    }
+  };
+
+  w.dateUtils = dateUtils;
+})(window);
+/**
+ * Simple date and time formatter based on php's date() syntax.
+ */
+
+(function(w) {
+  var oldRef = w.TimeFormat;
+
+  var months = 'January|February|March|April|May|June|July|August|September|October|November|December'.split('|');
+  var days = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday'.split('|');
+
+  var TimeFormat = function(format, time) {
+    if(!time instanceof Date) return;
+    // Implements PHP's date format syntax.
+    return format.replace(/%d|%D|%j|%l|%S|%w|%F|%m|%M|%n|%Y|%y|%a|%A|%g|%G|%h|%H|%i|%s|%u|%e/g, function(match) {
+      switch(match) {
+        case '%d':
+          return ("0" + time.getDate()).substr(-2,2);
+        case '%D':
+          return days[time.getDay()].substr(0,3);
+        case '%j':
+          return time.getDate();
+        case '%l':
+          return days[time.getDay()];
+        case '%S':
+          if(time.getDate() === 1) {
+            return 'st';
+          } else if(time.getDate() === 2) {
+            return 'nd';
+          } else if(time.getDate() === 3) {
+            return 'rd';
+          } else {
+            return 'th';
+          }
+          break;
+        case '%w':
+          return time.getDay();
+        case '%F':
+          return months[time.getMonth()];
+        case '%m':
+          return ("0" + time.getMonth()).substr(-2,2);
+        case '%M':
+          return months[time.getMonth()].substr(0,3);
+        case '%n':
+          return time.getMonth();
+        case '%Y':
+          return time.getFullYear();
+        case '%y':
+          return time.getFullYear().toString().substr(-2,2);
+        case '%a':
+          return time.getHours() > 11 ? 'pm' : 'am';
+        case '%A':
+          return time.getHours() > 11 ? 'PM' : 'AM';
+        case '%g':
+          return time.getHours() > 12 ? time.getHours() -12 : time.getHours();
+        case '%G':
+        return time.getHours();
+        case '%h':
+          return ("0" + (time.getHours() > 12 ? time.getHours() -12 : time.getHours())).substr(-2,2);
+        case '%H':
+          return ("0" + time.getHours()).substr(-2,2);
+        case '%i':
+          return ("0" + time.getMinutes()).substr(-2,2);
+        case '%s':
+          return ("0" + time.getSeconds()).substr(-2,2);
+        case '%u':
+          return time.getMilliseconds();
+        case '%e':
+          return time.getTimezoneOffset();
+      }
+    });
+  };
+
+  TimeFormat.noConflict = function() {
+    w.TimeFormat = oldRef;
+    return TimeFormat;
+  };
+
+  w.TimeFormat = TimeFormat;
+
+})(window);
 (function($) {
 
   $.declare('weekly', {
@@ -333,24 +483,35 @@
       template: '<div class="weekly-time-navigation">  <button class="weekly-previous-week weekly-change-week-button" data-action="prevWeek">&laquo; <span class="week"></span></button>  <button class="weekly-next-week weekly-change-week-button" data-action="nextWeek"><span class="week"></span> &raquo;</button>  <button class="weekly-jump-today weekly-change-today-button" data-action="jumpToday">Today</button>  <div class="weekly-header"></div></div><div class="weekly-days"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <%= timef(\'%D %m/%d\', date) %>  </div><% } %></div><div class="weekly-times"><% for (var i = 0; i < times.length; i++) { var time = times[i]; %>  <div class="weekly-time" data-time="<%= time %>"><%= time %></div><% } %></div><div class="weekly-grid"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <% for (var ii = 0; ii < times.length; ii++) { var time = times[ii]; %>      <div class="weekly-time" data-time="<%= time %>">&nbsp;</div>    <% } %>  </div><% } %></div>',
       readOnly: false,
       enableResize: true,
+      enableDelete: true,
       autoSplit: false
+    },
+
+    events: {
+      'click .weekly-event': 'eventClicked'
     },
 
     init: function() {
       this.events = [];
+
+      if (this.readOnly) {
+        this.enableResize = false;
+        this.enableDelete = false;
+      }
 
       if (this.autoRender) {
         this.update();
       }
     },
 
+
     update: function() {
       var data = {
-        timef: this.timef,
-        getWeekSpan: this.proxy(this.getWeekSpan),
+        timef: TimeFormat,
+        getWeekSpan: dateUtils.getWeekSpan,
         currentDate: this.currentDate,
-        dates: this.getDates(),
-        times: this.getTimes()
+        dates: dateUtils.getdateUtils(this.currentDate, this.weekOffset),
+        times: dateUtils.getTimes(this.startTime, this.endTime)
       };
       this.render(data);
 
@@ -373,10 +534,10 @@
         this.el.find(".weekly-change-today-button").css('display', 'block');
       }
 
-      this.el.find('.weekly-time-navigation .weekly-previous-week .week').html(this.getWeekSpan(this.currentDate, this.weekOffset - 1));
-      this.el.find('.weekly-time-navigation .weekly-next-week .week').html(this.getWeekSpan(this.currentDate, this.weekOffset + 1));
+      this.el.find('.weekly-time-navigation .weekly-previous-week .week').html(dateUtils.getWeekSpan(this.currentDate, this.weekOffset - 1));
+      this.el.find('.weekly-time-navigation .weekly-next-week .week').html(dateUtils.getWeekSpan(this.currentDate, this.weekOffset + 1));
 
-      this.el.find('.weekly-time-navigation .weekly-header').html(this.getWeekSpan(this.currentDate, this.weekOffset));
+      this.el.find('.weekly-time-navigation .weekly-header').html(dateUtils.getWeekSpan(this.currentDate, this.weekOffset));
 
       if (this.fitText) {
         this.el.find(".weekly-days .weekly-day, .weekly-times .weekly-time").fitText(1, {
@@ -390,7 +551,7 @@
     highlightToday: function() {
       var today = new Date();
 
-      this.el.find('[data-date="' + this.timef('%Y-%n-%j', today) + '"]').addClass('weekly-today');
+      this.el.find('[data-date="' + TimeFormat('%Y-%n-%j', today) + '"]').addClass('weekly-today');
     },
 
     registerClickToCreate: function() {
@@ -548,67 +709,6 @@
       this.el.trigger('modifyEvent', this.events[target.data('_index')]);
     },
 
-    getWeekSpan: function(date, offset) {
-      var first = this.getFirstDayOfWeek(date, offset);
-      var last = this.getLastDayOfWeek(date, offset);
-
-      var span = this.timef('%M %d', first) + ' - ';
-      if (first.getMonth() == last.getMonth()) {
-        span += this.timef('%d', last);
-      } else {
-        span += this.timef('%M %d', last);
-      }
-      return span;
-    },
-
-    getFirstDayOfWeek: function(date, offset) {
-      offset = offset || 0;
-      var first = date.getDate() - date.getDay();
-      var newDate = new Date(date.getTime());
-      newDate.setDate(first + (offset * 7));
-      return newDate;
-    },
-
-    getLastDayOfWeek: function(date, weekOffset) {
-      weekOffset = weekOffset || 0;
-      var first = date.getDate() - date.getDay();
-      var newDate = new Date(date.getTime());
-      newDate.setDate(first + 6 + (weekOffset * 7));
-      return newDate;
-    },
-
-    getDates: function() {
-      var curr = this.currentDate;
-
-      var daysInWeek = 7;
-
-      var days = [];
-      var sunday = this.getFirstDayOfWeek(curr, this.weekOffset);
-
-      for (var i = 0, c = daysInWeek; i < c; i++) {
-        var d = new Date(sunday.getTime());
-        d.setDate(d.getDate() - d.getDay() + i);
-        days.push(d);
-      }
-      return days;
-    },
-
-    getTimes: function() {
-      var end = this.endTime + 12;
-
-      var times = [];
-      for (var i = this.startTime; i <= end; i++) {
-        var hour = (i > 12) ? i - 12 : i;
-        var timeString = hour+':00 ';
-
-        timeString += (i > 11) ? 'PM' : 'AM';
-
-        times.push(timeString);
-      }
-
-      return times;
-    },
-
     nextWeek: function() {
       this.changeDate(1);
     },
@@ -649,7 +749,7 @@
         bottom: bottomOffset + '%'
       }).append([
         '<button data-action="removeEvent" class="weekly-delete">×</button>',
-        '<div class="weekly-event-title">' + this.timef('%g:%i %a', event.start) + ' -<br>' + this.timef('%g:%i %a', event.end) + '</div>',
+        '<div class="weekly-event-title">' + TimeFormat('%g:%i %a', event.start) + ' -<br>' + TimeFormat('%g:%i %a', event.end) + '</div>',
         '<div class="weekly-event-name">' + event.name + '</div>',
         '<div class="weekly-event-desc">' + event.description + '</div>',
         '<div class="weekly-dragger"></div>'
@@ -658,7 +758,9 @@
       if (!this.enableResize) {
         eventTemplate.find('.weekly-dragger').remove();
       }
-
+      if (!this.enableDelete) {
+        eventTemplate.find('.weekly-delete').remove();
+      }
       var selectedDay = this.el.find('.weekly-grid .weekly-day[data-date="' + startDate + '"]');
 
       selectedDay.append(eventTemplate);
@@ -693,73 +795,6 @@
       var percent = (diff / this.timeDifference) * 100;
 
       return percent;
-    },
-
-    timef: function(format, time) {
-      if(!time instanceof Date) return;
-
-      var months = 'January|February|March|April|May|June|July|August|September|October|November|December'.split('|');
-      var days = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday'.split('|');
-
-
-      // Implements PHP's date format syntax.
-      return format.replace(/%d|%D|%j|%l|%S|%w|%F|%m|%M|%n|%Y|%y|%a|%A|%g|%G|%h|%H|%i|%s|%u|%e/g, function(match) {
-        switch(match) {
-          case '%d':
-            return ("0" + time.getDate()).substr(-2,2);
-          case '%D':
-            return days[time.getDay()].substr(0,3);
-          case '%j':
-            return time.getDate();
-          case '%l':
-            return days[time.getDay()];
-          case '%S':
-            if(time.getDate() === 1) {
-              return 'st';
-            } else if(time.getDate() === 2) {
-              return 'nd';
-            } else if(time.getDate() === 3) {
-              return 'rd';
-            } else {
-              return 'th';
-            }
-            break;
-          case '%w':
-            return time.getDay();
-          case '%F':
-            return months[time.getMonth()];
-          case '%m':
-            return ("0" + time.getMonth()).substr(-2,2);
-          case '%M':
-            return months[time.getMonth()].substr(0,3);
-          case '%n':
-            return time.getMonth();
-          case '%Y':
-            return time.getFullYear();
-          case '%y':
-            return time.getFullYear().toString().substr(-2,2);
-          case '%a':
-            return time.getHours() > 11 ? 'pm' : 'am';
-          case '%A':
-            return time.getHours() > 11 ? 'PM' : 'AM';
-          case '%g':
-            return time.getHours() > 12 ? time.getHours() -12 : time.getHours();
-          case '%G':
-          return time.getHours();
-          case '%h':
-            return ("0" + (time.getHours() > 12 ? time.getHours() -12 : time.getHours())).substr(-2,2);
-          case '%H':
-            return ("0" + time.getHours()).substr(-2,2);
-          case '%i':
-            return ("0" + time.getMinutes()).substr(-2,2);
-          case '%s':
-            return ("0" + time.getSeconds()).substr(-2,2);
-          case '%u':
-            return time.getMilliseconds();
-          case '%e':
-            return time.getTimezoneOffset();
-        }
-      });
     },
 
     splitEvent: function(event) {
@@ -829,7 +864,14 @@
       this.events = [];
 
       this.el.trigger('clearEvents');
+    },
+
+    eventClicked: function(e) {
+      var el = $(e.currentTarget);
+      var event = el.data();
+      this.emit('eventClick', [event, el]);
     }
+
   });
 
 })(jQuery);
@@ -844,6 +886,7 @@
           var addEventFn = $parse(args.weeklyAdd);
           var removeEventFn = $parse(args.weeklyRemove);
           var weekChangeEventFn = $parse(args.weeklyChange);
+          var clickEventFn = $parse(args.weeklyClick);
           var options = $parse(args.weekly)();
           var isUpdating = false;
           el
@@ -871,6 +914,9 @@
                 });
                 removeEventFn(scope, { event: evnt });
               }
+            })
+            .on('eventClick', function(e, evnt, el) {
+              clickEventFn(scope, { event: evnt, el: el });
             })
             .weekly(options);
 
