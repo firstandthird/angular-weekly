@@ -34,6 +34,8 @@ var MainController = function($scope) {
   }
 
   $scope.eventClick = function(evnt, el) {
+    evnt.title = 'Clicked';
+    evnt.type = 'clicked';
     console.log('click', evnt, el);
   };
 

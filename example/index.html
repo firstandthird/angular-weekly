@@ -12,11 +12,14 @@
       body {
         font-family: Helvetica, Arial;
       }
+      .weekly-event-clicked {
+        background: red !important;
+      }
     </style>
   </head>
   <body>
     <div ng-controller="MainController">
-      <div weekly="{ autoSplit: true }" ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)"></div>
+      <div weekly="{ autoSplit: false }" ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)"></div>
       <button ng-click="addAnotherEvent()">Add Event</button>
     </div>
   </body>
