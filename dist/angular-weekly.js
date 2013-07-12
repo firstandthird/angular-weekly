@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.9
+ * v0.0.10
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -31,8 +31,8 @@
                     var item = evnt[i];
                     scope[args.ngModel].push(item);
                   }
+                  addEventFn(scope, { event: evnt });
                 });
-                addEventFn(scope, { event: evnt });
               }
             })
             .on('removeEvent', function(e, evnt) {
@@ -40,12 +40,14 @@
                 var index = evnt._index;
                 scope.$apply(function() {
                   scope[args.ngModel].splice(index, 1);
+                  removeEventFn(scope, { event: evnt });
                 });
-                removeEventFn(scope, { event: evnt });
               }
             })
             .on('eventClick', function(e, evnt, el) {
-              clickEventFn(scope, { event: evnt, el: el });
+              scope.$apply(function() {
+                clickEventFn(scope, { event: scope[args.ngModel][evnt._index], el: el });
+              });
             })
             .weekly(options);
 

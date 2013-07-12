@@ -1,4 +1,9 @@
 
+0.0.10 / 2013-07-12 
+==================
+
+  * wrap functions in scope apply so they can be watched
+
 0.0.9 / 2013-07-09 
 ==================
 
