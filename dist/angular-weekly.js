@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.10
+ * v0.0.11
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -59,6 +59,14 @@
                 .weekly('addEvent', val);
               isUpdating = false;
             }, true);
+          }
+
+          if (args.weeklyTimezone) {
+            scope.$watch(args.weeklyTimezone, function(val) {
+              if (val) {
+                el.weekly('setTimezoneOffset', val);
+              }
+            });
           }
         }
       };

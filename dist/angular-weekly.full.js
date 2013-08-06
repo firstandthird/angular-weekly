@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.10
+ * v0.0.11
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -313,7 +313,7 @@
 })(window.Fidel);
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.14
+ * v0.0.25
  * https://github.com/jgallen23/weekly
  * copyright Greg Allen 2013
  * MIT License
@@ -361,8 +361,8 @@
       var end = endTime + 12;
 
       var times = [];
-      for (var i = startTime; i <= end; i++) {
-        var hour = (i > 12) ? i - 12 : i;
+      for (var i = startTime; i < end; i++) {
+        var hour = (i > 12 || i === 0) ? Math.abs(i - 12) : i;
         var timeString = hour+':00 ';
 
         timeString += (i > 11) ? 'PM' : 'AM';
@@ -383,11 +383,17 @@
         span += TimeFormat('%M %d', last);
       }
       return span;
+    },
+    realTimezoneOffset: function(offset) {
+      var local = (new Date()).getTimezoneOffset() / -60;
+      var real = offset - local;
+      return real;
     }
   };
 
   w.dateUtils = dateUtils;
 })(window);
+
 /**
  * Simple date and time formatter based on php's date() syntax.
  */
@@ -400,6 +406,7 @@
 
   var TimeFormat = function(format, time) {
     if(!time instanceof Date) return;
+
     // Implements PHP's date format syntax.
     return format.replace(/%d|%D|%j|%l|%S|%w|%F|%m|%M|%n|%Y|%y|%a|%A|%g|%G|%h|%H|%i|%s|%u|%e/g, function(match) {
       switch(match) {
@@ -427,7 +434,7 @@
         case '%F':
           return months[time.getMonth()];
         case '%m':
-          return ("0" + time.getMonth()).substr(-2,2);
+          return ("0" + (time.getMonth() + 1)).substr(-2,2);
         case '%M':
           return months[time.getMonth()].substr(0,3);
         case '%n':
@@ -472,19 +479,24 @@
 
   $.declare('weekly', {
     defaults: {
-      startTime: 8,
-      endTime: 6,
+      startTime: 0,
+      endTime: 12,
+      startTimeScrollOffset: '8:00 AM',
       weekOffset: 0,
       currentDate: new Date(),
       autoRender: true,
       fitText: true,
       fitTextMin: 12,
       fitTextMax: 15,
-      template: '<div class="weekly-time-navigation">  <button class="weekly-previous-week weekly-change-week-button" data-action="prevWeek">&laquo; <span class="week"></span></button>  <button class="weekly-next-week weekly-change-week-button" data-action="nextWeek"><span class="week"></span> &raquo;</button>  <button class="weekly-jump-today weekly-change-today-button" data-action="jumpToday">Today</button>  <div class="weekly-header"></div></div><div class="weekly-days"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <%= timef(\'%D %m/%d\', date) %>  </div><% } %></div><div class="weekly-times"><% for (var i = 0; i < times.length; i++) { var time = times[i]; %>  <div class="weekly-time" data-time="<%= time %>"><%= time %></div><% } %></div><div class="weekly-grid"><% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>  <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">    <% for (var ii = 0; ii < times.length; ii++) { var time = times[ii]; %>      <div class="weekly-time" data-time="<%= time %>">&nbsp;</div>    <% } %>  </div><% } %></div>',
+      template: '<div class="weekly-time-navigation">  <% if (showPreviousWeekButton) { %>  <button class="weekly-previous-week weekly-change-week-button" data-action="prevWeek">&laquo; <span class="week"></span></button>  <% } %>  <button class="weekly-next-week weekly-change-week-button" data-action="nextWeek"><span class="week"></span> &raquo;</button>  <button class="weekly-jump-today weekly-change-today-button" data-action="jumpToday">Today</button>  <div class="weekly-header"></div></div><div class="weekly-calendar">  <div class="weekly-days">  <% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>    <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">      <%= timef(\'%D %m/%d\', date) %>    </div>  <% } %>  </div>  <div class="weekly-scroller">    <div class="weekly-times">    <% for (var i = 0; i < times.length; i++) { var time = times[i]; %>      <div class="weekly-time" data-time="<%= time %>"><%= time %></div>    <% } %>    </div>    <div class="weekly-grid">    <% for (var i = 0; i < dates.length; i++) { var date = dates[i]; %>      <div class="weekly-day" style="width:<%= 100/dates.length %>%" data-date="<%= timef(\'%Y-%n-%j\', date) %>">        <% for (var ii = 0; ii < times.length; ii++) { var time = times[ii]; %>          <div class="weekly-time" data-time="<%= time %>">&nbsp;</div>        <% } %>      </div>    <% } %>    </div>  </div></div>',
       readOnly: false,
       enableResize: true,
       enableDelete: true,
-      autoSplit: false
+      autoSplit: false,
+      showToday: true,
+      allowPreviousWeeks: true,
+      timezoneOffset: 0,
+      utcOffset: ((new Date()).getTimezoneOffset() / -60)
     },
 
     events: {
@@ -493,6 +505,8 @@
 
     init: function() {
       this.events = [];
+
+      this.oldDate = this.currentDate;
 
       if (this.readOnly) {
         this.enableResize = false;
@@ -504,14 +518,14 @@
       }
     },
 
-
     update: function() {
       var data = {
         timef: TimeFormat,
         getWeekSpan: dateUtils.getWeekSpan,
         currentDate: this.currentDate,
         dates: dateUtils.getdateUtils(this.currentDate, this.weekOffset),
-        times: dateUtils.getTimes(this.startTime, this.endTime)
+        times: dateUtils.getTimes(this.startTime, this.endTime),
+        showPreviousWeekButton: (this.allowPreviousWeeks || (this.weekOffset !== 0))
       };
       this.render(data);
 
@@ -519,7 +533,7 @@
         this.renderEvent(this.events[i]);
       }
 
-      this.timeDifference = (this.endTime + 13) - this.startTime;
+      this.timeDifference = (this.endTime + 12) - this.startTime;
 
       if(!this.readOnly) {
         this.registerClickToCreate();
@@ -528,7 +542,7 @@
 
       this.highlightToday();
 
-      if(!this.weekOffset) {
+      if(!this.showToday || !this.weekOffset) {
         this.el.find(".weekly-change-today-button").css('display', 'none');
       } else {
         this.el.find(".weekly-change-today-button").css('display', 'block');
@@ -545,13 +559,20 @@
           'maxFontSize': this.fitTextMax
         });
       }
+
+      if (this.startTimeScrollOffset) {
+        var top = $(window).scrollTop();
+        var el = this.el.find('[data-time="'+this.startTimeScrollOffset+'"]');
+        el[0].scrollIntoView();
+        $(window).scrollTop(top);
+      }
       this.emit('weekChange', { dates: data.dates, times: data.times });
     },
 
     highlightToday: function() {
-      var today = new Date();
+      var today = this.currentDate;
 
-      this.el.find('[data-date="' + TimeFormat('%Y-%n-%j', today) + '"]').addClass('weekly-today');
+      this.el.find('.weekly-grid [data-date="' + TimeFormat('%Y-%n-%j', today) + '"]').addClass('weekly-today');
     },
 
     registerClickToCreate: function() {
@@ -732,10 +753,20 @@
     },
 
     renderEvent: function(event) {
-      var startDate = event.start.getFullYear() + "-" + event.start.getMonth() + "-" + event.start.getDate();
-      var startTime = event.start.toTimeString().slice(0,5);
-      var endDate = event.end.getFullYear() + "-" + event.end.getMonth() + "-" + event.end.getDate();
-      var endTime = event.end.toTimeString().slice(0,5);
+      var start = new Date(event.start.getTime());
+      var end = new Date(event.end.getTime());
+
+      start.setHours(start.getHours() + this.timezoneOffset);
+      end.setHours(end.getHours() + this.timezoneOffset);
+
+      var startDate = start.getFullYear() + "-" + start.getMonth() + "-" + start.getDate();
+      var startTime = start.toTimeString().slice(0,5);
+      var endDate = end.getFullYear() + "-" + event.end.getMonth() + "-" + end.getDate();
+      var endTime = end.toTimeString().slice(0,5);
+
+      if(endTime === "00:00") {
+        endTime = "24:00";
+      }
 
       var topOffset = 100 - this.getTimeOffsetPercent(startTime);
       var bottomOffset = this.getTimeOffsetPercent(endTime);
@@ -744,12 +775,15 @@
 
       eventTemplate.data(event);
 
+      eventTemplate.data('offset-start', start);
+      eventTemplate.data('offset-end', end);
+
       eventTemplate.css({
         top: topOffset + '%',
         bottom: bottomOffset + '%'
       }).append([
-        '<button data-action="removeEvent" class="weekly-delete">×</button>',
-        '<div class="weekly-event-time">' + TimeFormat('%g:%i', event.start) + ' - ' + TimeFormat('%g:%i%a', event.end) + '</div>',
+        '<button data-action="removeEvent" class="weekly-delete">&times;</button>',
+        '<div class="weekly-event-time">' + TimeFormat('%g:%i', start) + ' - ' + TimeFormat('%g:%i%a', end) + '</div>',
         '<div class="weekly-event-title">' + event.title + '</div>',
         '<div class="weekly-event-desc">' + event.description + '</div>',
         '<div class="weekly-dragger"></div>'
@@ -844,7 +878,9 @@
 
         e._index = this.events.length;
 
-        this.renderEvent(e);
+        if (e.start.getHours() >= this.startTime && e.end.getHours() <= (this.endTime + 12)) {
+          this.renderEvent(e);
+        }
         this.events.push(e);
       }
 
@@ -876,6 +912,16 @@
       var el = $(e.currentTarget);
       var event = el.data();
       this.emit('eventClick', [event, el]);
+    },
+
+    setTimezoneOffset: function(offset) {
+      this.timezoneOffset = dateUtils.realTimezoneOffset(offset);
+
+      this.utcOffset = offset;
+
+      this.update();
+
+      return this;
     }
 
   });
@@ -936,6 +982,14 @@
                 .weekly('addEvent', val);
               isUpdating = false;
             }, true);
+          }
+
+          if (args.weeklyTimezone) {
+            scope.$watch(args.weeklyTimezone, function(val) {
+              if (val) {
+                el.weekly('setTimezoneOffset', val);
+              }
+            });
           }
         }
       };
