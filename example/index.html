@@ -12,6 +12,9 @@
       body {
         font-family: Helvetica, Arial;
       }
+      .utils {
+        margin-top: 10px;
+      }
       .weekly-event-clicked {
         background: red !important;
       }
@@ -19,8 +22,16 @@
   </head>
   <body>
     <div ng-controller="MainController">
-      <div weekly="{ autoSplit: false }" ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)"></div>
-      <button ng-click="addAnotherEvent()">Add Event</button>
+      <div weekly="{ autoSplit: false }" ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)" weekly-timezone="timezoneOffset"></div>
+      <div class="utils">
+        <span>Timezone Select</span>
+        <select ng-model="timezoneOffset">
+          <option value="-8">-8</option>
+          <option value="-7">-7</option>
+          <option value="-6">-6</option>
+        </select>
+        <button ng-click="addAnotherEvent()">Add Event</button>
+      </div>
     </div>
   </body>
 </html>
