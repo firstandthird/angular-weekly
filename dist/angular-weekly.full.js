@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.11
+ * v0.0.12
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -50,7 +50,7 @@
 })( jQuery );
 /*!
  * fidel - a ui view controller
- * v2.2.2
+ * v2.2.3
  * https://github.com/jgallen23/fidel
  * copyright Greg Allen 2013
  * MIT License
@@ -313,7 +313,7 @@
 })(window.Fidel);
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.25
+ * v0.0.28
  * https://github.com/jgallen23/weekly
  * copyright Greg Allen 2013
  * MIT License
@@ -448,7 +448,7 @@
         case '%A':
           return time.getHours() > 11 ? 'PM' : 'AM';
         case '%g':
-          return time.getHours() > 12 ? time.getHours() -12 : time.getHours();
+          return time.getHours() > 12 ? time.getHours() -12 : (time.getHours() ? time.getHours() : 12);
         case '%G':
         return time.getHours();
         case '%h':
@@ -514,11 +514,13 @@
       }
 
       if (this.autoRender) {
-        this.update();
+        var data = this.update();
+        this.emit('weekChange', data);
       }
     },
 
     update: function() {
+
       var data = {
         timef: TimeFormat,
         getWeekSpan: dateUtils.getWeekSpan,
@@ -566,7 +568,8 @@
         el[0].scrollIntoView();
         $(window).scrollTop(top);
       }
-      this.emit('weekChange', { dates: data.dates, times: data.times });
+
+      return { dates: data.dates, times: data.times };
     },
 
     highlightToday: function() {
@@ -604,8 +607,8 @@
           var parsedDate = eventData.date.split('-');
 
           this.addEvent({
-            start: new Date(parsedDate[0], parsedDate[1], parsedDate[2], eventData.starttime),
-            end: new Date(parsedDate[0], parsedDate[1], parsedDate[2], eventData.endtime)
+            start: new Date(parsedDate[0], parsedDate[1], parsedDate[2], eventData.starttime - this.timezoneOffset),
+            end: new Date(parsedDate[0], parsedDate[1], parsedDate[2], eventData.endtime - this.timezoneOffset)
           });
 
           this.pendingEvent.remove();
@@ -749,7 +752,8 @@
         this.weekOffset += offsetWeek;
       }
 
-      this.update();
+      var data = this.update();
+      this.emit('weekChange', data);
     },
 
     renderEvent: function(event) {
