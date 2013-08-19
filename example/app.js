@@ -19,7 +19,7 @@ var MainController = function($scope) {
     id: '456'
   }
 
-  $scope.events = [event1, event2];
+  $scope.events = [];//[event1, event2];
 
   $scope.addEvent = function(evnt) {
     console.log('event added', evnt);
