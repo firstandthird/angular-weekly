@@ -1,4 +1,14 @@
 
+0.0.13 / 2013-10-02 
+==================
+
+  * added split interval drop down to example
+  * weekly-split-interval attribute
+  * set specific version for angular
+  * [lib] fixed passing in options
+  * [lib] updated to use isolated scope
+  * [example] check if evnt exists before updating
+
 0.0.12 / 2013-08-19 
 ==================
 

@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.12
+ * v0.0.13
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -11,17 +11,23 @@
       return {
         restrict: 'EA',
         require: 'ngModel',
-        link: function(scope, el, args, model) {
-          var addEventFn = $parse(args.weeklyAdd);
-          var removeEventFn = $parse(args.weeklyRemove);
-          var weekChangeEventFn = $parse(args.weeklyChange);
-          var clickEventFn = $parse(args.weeklyClick);
-          var options = $parse(args.weekly)();
+        scope: {
+          model: '=ngModel',
+          options: '&weekly',
+          weekChangeEventFn: '&weeklyChange',
+          addEventFn: '&weeklyAdd',
+          removeEventFn: '&weeklyRemove',
+          clickEventFn: '&weeklyClick',
+          timezone: '=weeklyTimezone',
+          splitInterval: '=weeklySplitInterval'
+        },
+        link: function(scope, el, args) {
           var isUpdating = false;
+          var options = scope.options();
           el
             .addClass('weekly')
             .on('weekChange', function(e, data) {
-              weekChangeEventFn(scope, { data: data });
+              scope.weekChangeEventFn({ data: data });
             })
             .on('addEvent', function(e, evnt) {
               if (!isUpdating) {
@@ -29,9 +35,9 @@
                   evnt = (evnt instanceof Array) ? evnt : [evnt];
                   for (var i = 0, c = evnt.length; i < c; i++) {
                     var item = evnt[i];
-                    scope[args.ngModel].push(item);
+                    scope.model.push(item);
                   }
-                  addEventFn(scope, { event: evnt });
+                  scope.addEventFn({ event: evnt });
                 });
               }
             })
@@ -39,20 +45,20 @@
               if (!isUpdating) {
                 var index = evnt._index;
                 scope.$apply(function() {
-                  scope[args.ngModel].splice(index, 1);
-                  removeEventFn(scope, { event: evnt });
+                  scope.model.splice(index, 1);
+                  scope.removeEventFn({ event: evnt });
                 });
               }
             })
             .on('eventClick', function(e, evnt, el) {
               scope.$apply(function() {
-                clickEventFn(scope, { event: scope[args.ngModel][evnt._index], el: el });
+                scope.clickEventFn({ event: scope.model[evnt._index], el: el });
               });
             })
             .weekly(options);
 
           if (args.ngModel) {
-            scope.$watch(args.ngModel, function(val) {
+            scope.$watch('model', function(val) {
               isUpdating = true;
               el
                 .weekly('clearEvents')
@@ -62,9 +68,17 @@
           }
 
           if (args.weeklyTimezone) {
-            scope.$watch(args.weeklyTimezone, function(val) {
+            scope.$watch('timezone', function(val) {
               if (val) {
                 el.weekly('setTimezoneOffset', val);
+              }
+            });
+          }
+
+          if (args.weeklySplitInterval) {
+            scope.$watch('splitInterval', function(val) {
+              if (val) {
+                el.weekly('setSplitInterval', val);
               }
             });
           }

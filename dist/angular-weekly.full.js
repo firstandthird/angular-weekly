@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.12
+ * v0.0.13
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -313,7 +313,7 @@
 })(window.Fidel);
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.28
+ * v0.0.37
  * https://github.com/jgallen23/weekly
  * copyright Greg Allen 2013
  * MIT License
@@ -332,6 +332,7 @@
     },
     getFirstDayOfWeek: function(date, offset) {
       offset = offset || 0;
+
       var first = date.getDate() - date.getDay();
       var newDate = new Date(date.getTime());
       newDate.setDate(first + (offset * 7));
@@ -339,12 +340,16 @@
     },
     getLastDayOfWeek: function(date, weekOffset) {
       weekOffset = weekOffset || 0;
+
       var first = date.getDate() - date.getDay();
       var newDate = new Date(date.getTime());
       newDate.setDate(first + 6 + (weekOffset * 7));
       return newDate;
     },
-    getdateUtils: function(date, weekOffset) {
+    getDates: function(date, weekOffset, dayOffset) {
+      date = new Date(date);
+      date.setHours(0, 0, 0);
+      dayOffset = dayOffset || 0;
       var daysInWeek = 7;
 
       var days = [];
@@ -352,7 +357,7 @@
 
       for (var i = 0, c = daysInWeek; i < c; i++) {
         var d = new Date(sunday.getTime());
-        d.setDate(d.getDate() - d.getDay() + i);
+        d.setDate(d.getDate() - d.getDay() + dayOffset + i);
         days.push(d);
       }
       return days;
@@ -372,9 +377,13 @@
 
       return times;
     },
-    getWeekSpan: function(date, offset) {
+    getWeekSpan: function(date, offset, dayOffset) {
+      dayOffset = dayOffset || 0;
       var first = this.getFirstDayOfWeek(date, offset);
       var last = this.getLastDayOfWeek(date, offset);
+
+      first.setDate(first.getDate() + dayOffset);
+      last.setDate(last.getDate() + dayOffset);
 
       var span = TimeFormat('%M %d', first) + ' - ';
       if (first.getMonth() == last.getMonth()) {
@@ -388,6 +397,10 @@
       var local = (new Date()).getTimezoneOffset() / -60;
       var real = offset - local;
       return real;
+    },
+    isPastDate: function(past) {
+      var pastParts = past.split('-');
+      return (TimeFormat('%Y%m%d', new Date(pastParts[0], pastParts[1], pastParts[2])) < TimeFormat('%Y%m%d', new Date()));
     }
   };
 
@@ -493,10 +506,17 @@
       enableResize: true,
       enableDelete: true,
       autoSplit: false,
+      autoSplitInterval: 30,
       showToday: true,
       allowPreviousWeeks: true,
+      allowPastEventCreation: false,
       timezoneOffset: 0,
-      utcOffset: ((new Date()).getTimezoneOffset() / -60)
+      utcOffset: ((new Date()).getTimezoneOffset() / -60),
+      todayFirst: false,
+      dayOffset: 0,
+
+      // How many minutes to draw a divider line
+      interval: 30
     },
 
     events: {
@@ -513,10 +533,22 @@
         this.enableDelete = false;
       }
 
+      if (this.todayFirst) {
+        this.dayOffset = this.currentDate.getDay();
+      }
+
+      if(this.interval < 1 || this.interval > 60) {
+        this.interval = 60;
+      }
+
       if (this.autoRender) {
         var data = this.update();
         this.emit('weekChange', data);
       }
+    },
+
+    get: function(property) {
+      return this[property];
     },
 
     update: function() {
@@ -525,7 +557,7 @@
         timef: TimeFormat,
         getWeekSpan: dateUtils.getWeekSpan,
         currentDate: this.currentDate,
-        dates: dateUtils.getdateUtils(this.currentDate, this.weekOffset),
+        dates: dateUtils.getDates(this.currentDate, this.weekOffset, this.dayOffset),
         times: dateUtils.getTimes(this.startTime, this.endTime),
         showPreviousWeekButton: (this.allowPreviousWeeks || (this.weekOffset !== 0))
       };
@@ -550,10 +582,10 @@
         this.el.find(".weekly-change-today-button").css('display', 'block');
       }
 
-      this.el.find('.weekly-time-navigation .weekly-previous-week .week').html(dateUtils.getWeekSpan(this.currentDate, this.weekOffset - 1));
-      this.el.find('.weekly-time-navigation .weekly-next-week .week').html(dateUtils.getWeekSpan(this.currentDate, this.weekOffset + 1));
+      this.el.find('.weekly-time-navigation .weekly-previous-week .week').html(dateUtils.getWeekSpan(this.currentDate, this.weekOffset - 1, this.dayOffset));
+      this.el.find('.weekly-time-navigation .weekly-next-week .week').html(dateUtils.getWeekSpan(this.currentDate, this.weekOffset + 1, this.dayOffset));
 
-      this.el.find('.weekly-time-navigation .weekly-header').html(dateUtils.getWeekSpan(this.currentDate, this.weekOffset));
+      this.el.find('.weekly-time-navigation .weekly-header').html(dateUtils.getWeekSpan(this.currentDate, this.weekOffset, this.dayOffset));
 
       if (this.fitText) {
         this.el.find(".weekly-days .weekly-day, .weekly-times .weekly-time").fitText(1, {
@@ -589,7 +621,16 @@
       gridDays.unbind('mousedown mousemove mouseup mouseout click');
 
       gridDays.on('mousedown', this.proxy(function(event){
-        if(event.which !== 1 || $(event.target).is('.weekly-dragger')) return;
+        var target = $(event.target);
+
+        if(event.which !== 1 || target.is('.weekly-dragger') || target.is('.weekly-delete')) return;
+
+        var currentTarget = $(event.currentTarget);
+
+        if(!this.allowPastEventCreation && dateUtils.isPastDate(currentTarget.data('date'))) {
+          return;
+        }
+
         this.mouseDown = true;
 
         if(this.pendingEvent) {
@@ -599,6 +640,8 @@
       }));
 
       gridDays.on('mouseup', this.proxy(function(){
+        if(!this.mouseDown) return;
+
         this.mouseDown = false;
 
         if(this.pendingEvent) {
@@ -607,8 +650,8 @@
           var parsedDate = eventData.date.split('-');
 
           this.addEvent({
-            start: new Date(parsedDate[0], parsedDate[1], parsedDate[2], eventData.starttime - this.timezoneOffset),
-            end: new Date(parsedDate[0], parsedDate[1], parsedDate[2], eventData.endtime - this.timezoneOffset)
+            start: new Date(parsedDate[0], parsedDate[1], parsedDate[2], ~~(eventData.starttime) - this.timezoneOffset, this.fromDecimal(eventData.starttime)),
+            end: new Date(parsedDate[0], parsedDate[1], parsedDate[2], ~~(eventData.endtime) - this.timezoneOffset, this.fromDecimal(eventData.endtime))
           });
 
           this.pendingEvent.remove();
@@ -624,7 +667,14 @@
       }));
 
       gridDays.on('click', this.proxy(function(event){
+        var target = $(event.currentTarget);
+
+        if(!this.allowPastEventCreation && dateUtils.isPastDate(target.data('date'))) {
+          return;
+        }
+
         if($(event.target).is('.weekly-time,.weekly-day')) {
+          this.mouseDown = true;
           this.createEvent(event);
           gridDays.trigger('mouseup');
         }
@@ -681,9 +731,10 @@
       var mouseOffsetTop = event.pageY - targetOffset.top;
       var dayHeight = $(event.currentTarget).height();
       var hourHeight = Math.round(dayHeight / this.timeDifference);
+      var intervalHeight = hourHeight / (60 / this.interval);
 
-      var tempStart = Math.floor(mouseOffsetTop / hourHeight) * hourHeight;
-      var tempEnd = Math.ceil(mouseOffsetTop / hourHeight) * hourHeight;
+      var tempStart = Math.floor(mouseOffsetTop / intervalHeight) * intervalHeight;
+      var tempEnd = Math.ceil(mouseOffsetTop / intervalHeight) * intervalHeight;
 
       if(this.pendingEventStart === null) {
         this.pendingEventStart = tempStart;
@@ -714,8 +765,9 @@
       var mouseOffsetTop = event.pageY - targetOffset.top;
       var dayHeight = $(event.currentTarget).height();
       var hourHeight = Math.round(dayHeight / this.timeDifference);
+      var intervalHeight = hourHeight / (60 / this.interval);
 
-      var tempEnd = Math.ceil(mouseOffsetTop / hourHeight) * hourHeight;
+      var tempEnd = Math.ceil(mouseOffsetTop / intervalHeight) * intervalHeight;
 
       if(tempEnd < (targetOffset.top + dayHeight)) {
         target.css({
@@ -725,7 +777,8 @@
 
       var duration = target.outerHeight() / hourHeight;
       var end = new Date(target.data('start'));
-      end.setHours(end.getHours() + duration);
+      end.setHours(end.getHours() + ~~(duration));
+      end.setMinutes(this.fromDecimal(duration));
       target.data('end', end);
 
       this.events[target.data('_index')].end = end;
@@ -827,6 +880,11 @@
       return parseFloat(parts[0] + '.' + 100/(60/parts[1]));
     },
 
+    // This just gets the minutes in the decimal
+    fromDecimal: function(time) {
+      return Math.round(60 * (time % 1));
+    },
+
     getTimeOffsetPercent: function(time) {
       time = this.toFraction(time) - this.startTime;
 
@@ -841,16 +899,24 @@
       return percent;
     },
 
+    setAutoSplit: function(val) {
+      this.autoSplit = val;
+    },
+
+    setSplitInterval: function(val) {
+      this.autoSplitInterval = val;
+    },
+
     splitEvent: function(event) {
       var diff = event.end.getTime() - event.start.getTime();
-      var hour = 60 * 60 * 1000;
-      var count = Math.ceil(diff / hour); //divide by 1 hour
+      var interval = this.autoSplitInterval * 60 * 1000;
+      var count = Math.ceil(diff / interval); //divide by 1 hour
       var startTime = event.start.getTime();
       var events = [];
       for (var i = 0; i < count; i++) {
         var newEvent = $.extend({}, event); //clone event
-        newEvent.start = new Date(startTime + (hour * i));
-        newEvent.end = new Date(startTime + (hour * (i+1)));
+        newEvent.start = new Date(startTime + (interval * i));
+        newEvent.end = new Date(startTime + (interval * (i+1)));
         events.push(newEvent);
       }
       return events;
@@ -938,17 +1004,23 @@
       return {
         restrict: 'EA',
         require: 'ngModel',
-        link: function(scope, el, args, model) {
-          var addEventFn = $parse(args.weeklyAdd);
-          var removeEventFn = $parse(args.weeklyRemove);
-          var weekChangeEventFn = $parse(args.weeklyChange);
-          var clickEventFn = $parse(args.weeklyClick);
-          var options = $parse(args.weekly)();
+        scope: {
+          model: '=ngModel',
+          options: '&weekly',
+          weekChangeEventFn: '&weeklyChange',
+          addEventFn: '&weeklyAdd',
+          removeEventFn: '&weeklyRemove',
+          clickEventFn: '&weeklyClick',
+          timezone: '=weeklyTimezone',
+          splitInterval: '=weeklySplitInterval'
+        },
+        link: function(scope, el, args) {
           var isUpdating = false;
+          var options = scope.options();
           el
             .addClass('weekly')
             .on('weekChange', function(e, data) {
-              weekChangeEventFn(scope, { data: data });
+              scope.weekChangeEventFn({ data: data });
             })
             .on('addEvent', function(e, evnt) {
               if (!isUpdating) {
@@ -956,9 +1028,9 @@
                   evnt = (evnt instanceof Array) ? evnt : [evnt];
                   for (var i = 0, c = evnt.length; i < c; i++) {
                     var item = evnt[i];
-                    scope[args.ngModel].push(item);
+                    scope.model.push(item);
                   }
-                  addEventFn(scope, { event: evnt });
+                  scope.addEventFn({ event: evnt });
                 });
               }
             })
@@ -966,20 +1038,20 @@
               if (!isUpdating) {
                 var index = evnt._index;
                 scope.$apply(function() {
-                  scope[args.ngModel].splice(index, 1);
-                  removeEventFn(scope, { event: evnt });
+                  scope.model.splice(index, 1);
+                  scope.removeEventFn({ event: evnt });
                 });
               }
             })
             .on('eventClick', function(e, evnt, el) {
               scope.$apply(function() {
-                clickEventFn(scope, { event: scope[args.ngModel][evnt._index], el: el });
+                scope.clickEventFn({ event: scope.model[evnt._index], el: el });
               });
             })
             .weekly(options);
 
           if (args.ngModel) {
-            scope.$watch(args.ngModel, function(val) {
+            scope.$watch('model', function(val) {
               isUpdating = true;
               el
                 .weekly('clearEvents')
@@ -989,9 +1061,17 @@
           }
 
           if (args.weeklyTimezone) {
-            scope.$watch(args.weeklyTimezone, function(val) {
+            scope.$watch('timezone', function(val) {
               if (val) {
                 el.weekly('setTimezoneOffset', val);
+              }
+            });
+          }
+
+          if (args.weeklySplitInterval) {
+            scope.$watch('splitInterval', function(val) {
+              if (val) {
+                el.weekly('setSplitInterval', val);
               }
             });
           }
