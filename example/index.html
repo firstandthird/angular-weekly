@@ -22,7 +22,7 @@
   </head>
   <body>
     <div ng-controller="MainController">
-      <div weekly="{ autoSplit: false }" ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)" weekly-timezone="timezoneOffset"></div>
+      <div weekly="{ autoSplit: true }" ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)" weekly-timezone="timezoneOffset" weekly-split-interval="splitInterval"></div>
       <div class="utils">
         <span>Timezone Select</span>
         <select ng-model="timezoneOffset">
@@ -31,6 +31,11 @@
           <option value="-6">-6</option>
         </select>
         <button ng-click="addAnotherEvent()">Add Event</button>
+        <select ng-model="splitInterval">
+          <option value="30">30</option>
+          <option value="60">60</option>
+          <option value="90">90</option>
+        </select>
       </div>
     </div>
   </body>
