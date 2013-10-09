@@ -19,6 +19,7 @@ var MainController = function($scope) {
     id: '456'
   }
 
+  $scope.readonly = false;
   $scope.events = [];//[event1, event2];
 
   $scope.addEvent = function(evnt) {
