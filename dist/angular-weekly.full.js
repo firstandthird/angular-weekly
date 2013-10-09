@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.13
+ * v0.0.14
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -313,7 +313,7 @@
 })(window.Fidel);
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.37
+ * v0.0.38
  * https://github.com/jgallen23/weekly
  * copyright Greg Allen 2013
  * MIT License
@@ -569,10 +569,8 @@
 
       this.timeDifference = (this.endTime + 12) - this.startTime;
 
-      if(!this.readOnly) {
-        this.registerClickToCreate();
-        this.registerModifyEvent();
-      }
+      this.registerClickToCreate();
+      this.registerModifyEvent();
 
       this.highlightToday();
 
@@ -619,6 +617,10 @@
 
       // Make sure anything previously bound is bound no more.
       gridDays.unbind('mousedown mousemove mouseup mouseout click');
+
+      if (this.readOnly) {
+        return;
+      }
 
       gridDays.on('mousedown', this.proxy(function(event){
         var target = $(event.target);
@@ -696,6 +698,10 @@
 
       // Make sure anything previously bound is bound no more.
       eventDraggers.find('.weekly-dragger').unbind('mousedown mousemove mouseup mouseout click');
+
+      if (this.readOnly) {
+        return;
+      }
 
       eventDraggers.on('mousedown', '.weekly-dragger', this.proxy(function(event){
         if(event.which !== 1) return;
@@ -992,6 +998,15 @@
       this.update();
 
       return this;
+    },
+
+    setReadOnly: function(val) {
+      this.readOnly = val;
+      this.enableResize = !val;
+      this.enableDelete = !val;
+      this.update();
+      return this;
+
     }
 
   });
@@ -1012,7 +1027,8 @@
           removeEventFn: '&weeklyRemove',
           clickEventFn: '&weeklyClick',
           timezone: '=weeklyTimezone',
-          splitInterval: '=weeklySplitInterval'
+          splitInterval: '=weeklySplitInterval',
+          readOnly: '=weeklyReadonly'
         },
         link: function(scope, el, args) {
           var isUpdating = false;
@@ -1072,6 +1088,14 @@
             scope.$watch('splitInterval', function(val) {
               if (val) {
                 el.weekly('setSplitInterval', val);
+              }
+            });
+          }
+
+          if (args.weeklyReadonly) {
+            scope.$watch('readOnly', function(val) {
+              if (typeof val !== 'undefined') {
+                el.weekly('setReadOnly', val);
               }
             });
           }
