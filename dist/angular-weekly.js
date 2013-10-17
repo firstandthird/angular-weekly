@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.13
+ * v0.0.14
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -19,7 +19,6 @@
           removeEventFn: '&weeklyRemove',
           clickEventFn: '&weeklyClick',
           timezone: '=weeklyTimezone',
-          splitInterval: '=weeklySplitInterval'
         },
         link: function(scope, el, args) {
           var isUpdating = false;
@@ -75,13 +74,6 @@
             });
           }
 
-          if (args.weeklySplitInterval) {
-            scope.$watch('splitInterval', function(val) {
-              if (val) {
-                el.weekly('setSplitInterval', val);
-              }
-            });
-          }
         }
       };
   }]);
