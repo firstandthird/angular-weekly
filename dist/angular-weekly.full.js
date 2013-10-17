@@ -314,9 +314,15 @@
 
 /*!
  * weekly - jQuery Weekly Calendar Plugin
+<<<<<<< HEAD
  * v0.0.39
  * https://github.com/firstandthird/weekly
  * copyright First + Third 2013
+=======
+ * v0.0.38
+ * https://github.com/jgallen23/weekly
+ * copyright Greg Allen 2013
+>>>>>>> 152837d16754d60d828af91ab102ea9cc4a61757
  * MIT License
 */
 /**
@@ -998,6 +1004,11 @@
           removeEventFn: '&weeklyRemove',
           clickEventFn: '&weeklyClick',
           timezone: '=weeklyTimezone',
+<<<<<<< HEAD
+=======
+          splitInterval: '=weeklySplitInterval',
+          readOnly: '=weeklyReadonly'
+>>>>>>> 152837d16754d60d828af91ab102ea9cc4a61757
         },
         link: function(scope, el, args) {
           var isUpdating = false;
@@ -1053,6 +1064,24 @@
             });
           }
 
+<<<<<<< HEAD
+=======
+          if (args.weeklySplitInterval) {
+            scope.$watch('splitInterval', function(val) {
+              if (val) {
+                el.weekly('setSplitInterval', val);
+              }
+            });
+          }
+
+          if (args.weeklyReadonly) {
+            scope.$watch('readOnly', function(val) {
+              if (typeof val !== 'undefined') {
+                el.weekly('setReadOnly', val);
+              }
+            });
+          }
+>>>>>>> 152837d16754d60d828af91ab102ea9cc4a61757
         }
       };
   }]);
