@@ -99,8 +99,11 @@ module.exports = function(grunt) {
     },
     connect: {
       server:{
-        port: 8000,
-        base: '.'
+        options: {
+          port: 8000,
+          base: '.',
+          hostname: '*'
+        }
       },
       plato: {
         port: 8000,
