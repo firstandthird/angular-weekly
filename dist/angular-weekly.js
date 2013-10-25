@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.16
+ * v0.0.17
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -19,7 +19,7 @@
           removeEventFn: '&weeklyRemove',
           clickEventFn: '&weeklyClick',
           timezone: '=weeklyTimezone',
-          readOnly: '=weeklyReadonly'
+          readOnly: '=weeklyReadOnly'
         },
         link: function(scope, el, args) {
           var isUpdating = false;
@@ -71,7 +71,7 @@
             });
           }
 
-          if (args.weeklyReadonly) {
+          if (args.weeklyReadOnly) {
             scope.$watch('readOnly', function(val) {
               if (typeof val !== 'undefined') {
                 el.weekly('setReadOnly', val);

@@ -1,4 +1,10 @@
 
+0.0.17 / 2013-10-24 
+==================
+
+  * renamed read-only, removed split code
+  * grunt-connect open to any host
+
 0.0.16 / 2013-10-17 
 ==================
 
