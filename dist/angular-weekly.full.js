@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.17
+ * v0.0.18
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2013
  * MIT License
@@ -1044,7 +1044,7 @@
 
           if (args.weeklyTimezone) {
             scope.$watch('timezone', function(val) {
-              if (val) {
+              if (val !== null) {
                 el.weekly('setTimezoneOffset', val);
               }
             });
