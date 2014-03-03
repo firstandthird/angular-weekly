@@ -2,7 +2,7 @@
  * angular-weekly - Weekly Calendar Angular directive
  * v0.0.18
  * https://github.com/jgallen23/angular-weekly/
- * copyright Greg Allen 2013
+ * copyright Greg Allen 2014
  * MIT License
 */
 (function() {
@@ -23,13 +23,20 @@
         },
         link: function(scope, el, args) {
           var isUpdating = false;
-          var options = scope.options();
+          var options = scope.options() || {};
+          var fnName = 'weekly';
+          if (typeof args.weeklyMobile !== 'undefined') {
+            fnName = 'weeklyMobile';
+            options.daysToDisplay = 1;
+          }
+          console.log(fnName, options);
           el
             .addClass('weekly')
             .on('weekChange', function(e, data) {
               scope.weekChangeEventFn({ data: data });
             })
             .on('addEvent', function(e, evnt) {
+              console.log(arguments);
               if (!isUpdating) {
                 scope.$apply(function() {
                   scope.model.push(evnt);
@@ -51,14 +58,14 @@
                 scope.clickEventFn({ event: scope.model[evnt._index], el: el });
               });
             })
-            .weekly(options);
+            [fnName](options);
 
           if (args.ngModel) {
             scope.$watch('model', function(val) {
               isUpdating = true;
               el
-                .weekly('clearEvents')
-                .weekly('addEvent', val);
+                [fnName]('clearEvents')
+                [fnName]('addEvent', val);
               isUpdating = false;
             }, true);
           }
@@ -66,7 +73,7 @@
           if (args.weeklyTimezone) {
             scope.$watch('timezone', function(val) {
               if (val !== null) {
-                el.weekly('setTimezoneOffset', val);
+                el[fnName]('setTimezoneOffset', val);
               }
             });
           }
@@ -74,7 +81,7 @@
           if (args.weeklyReadOnly) {
             scope.$watch('readOnly', function(val) {
               if (typeof val !== 'undefined') {
-                el.weekly('setReadOnly', val);
+                el[fnName]('setReadOnly', val);
               }
             });
           }

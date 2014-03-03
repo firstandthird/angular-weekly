@@ -8,6 +8,7 @@
     <script src="../bower_components/jquery/jquery.js"></script>
     <script src="../bower_components/angular/angular.js"></script>
     <script src="../dist/angular-weekly.full.js"></script>
+    <script src="../bower_components/weekly/dist/weekly-mobile.js"></script>
     <script src="app.js"></script>
     <style>
       body {
@@ -24,6 +25,7 @@
   <body>
     <div ng-controller="MainController">
       <div weekly ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)" weekly-timezone="timezoneOffset" weekly-read-only="readonly"></div>
+      <div weekly ng-model="events" weekly-mobile weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)" weekly-timezone="timezoneOffset" weekly-read-only="readonly"></div>
       <div class="utils">
         <span>Timezone Select</span>
         <select ng-model="timezoneOffset">

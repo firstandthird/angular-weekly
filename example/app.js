@@ -19,6 +19,7 @@ var MainController = function($scope) {
     id: '456'
   }
 
+  $scope.timezoneOffset = '-8';
   $scope.readonly = false;
   $scope.events = [];//[event1, event2];
 
@@ -46,9 +47,9 @@ var MainController = function($scope) {
     console.log('week changed', data);
   }
 
-  $scope.$watch('events', function() {
-    console.log('events changed', arguments);
-  }, true);
+  //$scope.$watch('events', function() {
+    //console.log('events changed', arguments);
+  //}, true);
 
 
 };

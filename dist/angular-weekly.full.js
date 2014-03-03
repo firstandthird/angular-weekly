@@ -2,7 +2,7 @@
  * angular-weekly - Weekly Calendar Angular directive
  * v0.0.18
  * https://github.com/jgallen23/angular-weekly/
- * copyright Greg Allen 2013
+ * copyright Greg Allen 2014
  * MIT License
 */
 /*global jQuery */
@@ -48,7 +48,100 @@
   };
 
 })( jQuery );
+
 /*!
+ * dateformat - Date format lib
+ * v0.1.0
+ * https://github.com/firstandthird/dateformat
+ * copyright First + Third 2013
+ * MIT License
+*/
+/**
+ * Simple date and time formatter based on php's date() syntax.
+ */
+
+(function(w) {
+  var oldRef = w.dateFormat;
+
+  var months = 'January|February|March|April|May|June|July|August|September|October|November|December'.split('|');
+  var days = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday'.split('|');
+
+  var dateFormat = function(format, time) {
+    if(!time instanceof Date) return;
+
+    // Implements PHP's date format syntax.
+    return format.replace(/%d|%D|%j|%l|%S|%w|%F|%m|%M|%n|%Y|%y|%a|%A|%g|%G|%h|%H|%i|%s|%u|%e/g, function(match) {
+      switch(match) {
+        case '%d':
+          return ("0" + time.getDate()).slice(-2);
+        case '%D':
+          return days[time.getDay()].substr(0,3);
+        case '%j':
+          return time.getDate();
+        case '%l':
+          return days[time.getDay()];
+        case '%S':
+          if(time.getDate() === 1) {
+            return 'st';
+          } else if(time.getDate() === 2) {
+            return 'nd';
+          } else if(time.getDate() === 3) {
+            return 'rd';
+          } else {
+            return 'th';
+          }
+          break;
+        case '%w':
+          return time.getDay();
+        case '%F':
+          return months[time.getMonth()];
+        case '%m':
+          return ("0" + (time.getMonth() + 1)).slice(-2);
+        case '%M':
+          return months[time.getMonth()].substr(0,3);
+        case '%n':
+          return time.getMonth();
+        case '%Y':
+          return time.getFullYear();
+        case '%y':
+          return time.getFullYear().toString().slice(-2);
+        case '%a':
+          return time.getHours() > 11 ? 'pm' : 'am';
+        case '%A':
+          return time.getHours() > 11 ? 'PM' : 'AM';
+        case '%g':
+          return time.getHours() > 12 ? time.getHours() -12 : (time.getHours() ? time.getHours() : 12);
+        case '%G':
+        return time.getHours();
+        case '%h':
+          return ("0" + (time.getHours() > 12 ? time.getHours() -12 : time.getHours())).slice(-2);
+        case '%H':
+          return ("0" + time.getHours()).slice(-2);
+        case '%i':
+          return ("0" + time.getMinutes()).slice(-2);
+        case '%s':
+          return ("0" + time.getSeconds()).slice(-2);
+        case '%u':
+          return time.getMilliseconds();
+        case '%e':
+          return time.getTimezoneOffset();
+      }
+    });
+  };
+
+  dateFormat.translate = function(trans_months, trans_days) {
+    months = trans_months;
+    days = trans_days;
+  };
+
+  dateFormat.noConflict = function() {
+    w.dateFormat = oldRef;
+    return dateFormat;
+  };
+
+  w.dateFormat = dateFormat;
+
+})(window);/*!
  * fidel - a ui view controller
  * v2.2.3
  * https://github.com/jgallen23/fidel
@@ -314,9 +407,9 @@
 
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.39
+ * v0.0.47
  * https://github.com/firstandthird/weekly
- * copyright First + Third 2013
+ * copyright First + Third 2014
  * MIT License
 */
 /**
@@ -347,11 +440,11 @@
       newDate.setDate(first + 6 + (weekOffset * 7));
       return newDate;
     },
-    getDates: function(date, weekOffset, dayOffset) {
+    getDates: function(date, weekOffset, dayOffset, daysDisplay) {
       date = new Date(date);
       date.setHours(0, 0, 0);
       dayOffset = dayOffset || 0;
-      var daysInWeek = 7;
+      var daysInWeek = daysDisplay || 7;
 
       var days = [];
       var sunday = this.getFirstDayOfWeek(date, weekOffset);
@@ -386,12 +479,21 @@
       first.setDate(first.getDate() + dayOffset);
       last.setDate(last.getDate() + dayOffset);
 
-      var span = TimeFormat('%M %d', first) + ' - ';
+      var span = dateFormat('%M %d', first) + ' - ';
       if (first.getMonth() == last.getMonth()) {
-        span += TimeFormat('%d', last);
+        span += dateFormat('%d', last);
       } else {
-        span += TimeFormat('%M %d', last);
+        span += dateFormat('%M %d', last);
       }
+      return span;
+    },
+    getDaySpan: function(date, offset, dayOffset) {
+      dayOffset = dayOffset || 0;
+      var first = this.getFirstDayOfWeek(date, offset);
+
+      first.setDate(first.getDate() + dayOffset);
+
+      var span = dateFormat('%M %d', first);
       return span;
     },
     realTimezoneOffset: function(offset) {
@@ -401,94 +503,22 @@
     },
     isPastDate: function(past) {
       var pastParts = past.split('-');
-      return (TimeFormat('%Y%m%d', new Date(pastParts[0], pastParts[1], pastParts[2])) < TimeFormat('%Y%m%d', new Date()));
+      return (dateFormat('%Y%m%d', new Date(pastParts[0], pastParts[1], pastParts[2])) < dateFormat('%Y%m%d', new Date()));
+    },
+    getWeekOffset: function(dateA, dateB) {
+      var weekA = this.getFirstDayOfWeek(this.getDateWithoutTime(dateA));
+      var weekB = this.getFirstDayOfWeek(this.getDateWithoutTime(dateB));
+      var diff = Math.floor((weekB.getTime() - weekA.getTime()) / (1000*60*60*24*7));
+      return diff;
+    },
+    getDateWithoutTime: function(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
     }
   };
 
   w.dateUtils = dateUtils;
 })(window);
 
-/**
- * Simple date and time formatter based on php's date() syntax.
- */
-
-(function(w) {
-  var oldRef = w.TimeFormat;
-
-  var months = 'January|February|March|April|May|June|July|August|September|October|November|December'.split('|');
-  var days = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday'.split('|');
-
-  var TimeFormat = function(format, time) {
-    if(!time instanceof Date) return;
-
-    // Implements PHP's date format syntax.
-    return format.replace(/%d|%D|%j|%l|%S|%w|%F|%m|%M|%n|%Y|%y|%a|%A|%g|%G|%h|%H|%i|%s|%u|%e/g, function(match) {
-      switch(match) {
-        case '%d':
-          return ("0" + time.getDate()).substr(-2,2);
-        case '%D':
-          return days[time.getDay()].substr(0,3);
-        case '%j':
-          return time.getDate();
-        case '%l':
-          return days[time.getDay()];
-        case '%S':
-          if(time.getDate() === 1) {
-            return 'st';
-          } else if(time.getDate() === 2) {
-            return 'nd';
-          } else if(time.getDate() === 3) {
-            return 'rd';
-          } else {
-            return 'th';
-          }
-          break;
-        case '%w':
-          return time.getDay();
-        case '%F':
-          return months[time.getMonth()];
-        case '%m':
-          return ("0" + (time.getMonth() + 1)).substr(-2,2);
-        case '%M':
-          return months[time.getMonth()].substr(0,3);
-        case '%n':
-          return time.getMonth();
-        case '%Y':
-          return time.getFullYear();
-        case '%y':
-          return time.getFullYear().toString().substr(-2,2);
-        case '%a':
-          return time.getHours() > 11 ? 'pm' : 'am';
-        case '%A':
-          return time.getHours() > 11 ? 'PM' : 'AM';
-        case '%g':
-          return time.getHours() > 12 ? time.getHours() -12 : (time.getHours() ? time.getHours() : 12);
-        case '%G':
-        return time.getHours();
-        case '%h':
-          return ("0" + (time.getHours() > 12 ? time.getHours() -12 : time.getHours())).substr(-2,2);
-        case '%H':
-          return ("0" + time.getHours()).substr(-2,2);
-        case '%i':
-          return ("0" + time.getMinutes()).substr(-2,2);
-        case '%s':
-          return ("0" + time.getSeconds()).substr(-2,2);
-        case '%u':
-          return time.getMilliseconds();
-        case '%e':
-          return time.getTimezoneOffset();
-      }
-    });
-  };
-
-  TimeFormat.noConflict = function() {
-    w.TimeFormat = oldRef;
-    return TimeFormat;
-  };
-
-  w.TimeFormat = TimeFormat;
-
-})(window);
 (function($) {
 
   $.declare('weekly', {
@@ -496,6 +526,7 @@
       startTime: 0,
       endTime: 12,
       startTimeScrollOffset: '8:00 AM',
+      scrollFirstEvent: false, // '2014-02-05' or 'today' or 'everyday' or Date() or false
       weekOffset: 0,
       currentDate: new Date(),
       autoRender: true,
@@ -527,11 +558,6 @@
 
       this.oldDate = this.currentDate;
 
-      if (this.readOnly) {
-        this.enableResize = false;
-        this.enableDelete = false;
-      }
-
       if (this.todayFirst) {
         this.dayOffset = this.currentDate.getDay();
       }
@@ -552,8 +578,10 @@
 
     update: function() {
 
+      this.firstEvent = null;
+
       var data = {
-        timef: TimeFormat,
+        timef: dateFormat,
         getWeekSpan: dateUtils.getWeekSpan,
         currentDate: this.currentDate,
         dates: dateUtils.getDates(this.currentDate, this.weekOffset, this.dayOffset),
@@ -572,6 +600,7 @@
       this.registerModifyEvent();
 
       this.highlightToday();
+      this.highlightWeekend();
 
       if(!this.showToday || !this.weekOffset) {
         this.el.find(".weekly-change-today-button").css('display', 'none');
@@ -591,9 +620,10 @@
         });
       }
 
-      if (this.startTimeScrollOffset) {
-        var top = $(window).scrollTop();
-        var el = this.el.find('[data-time="'+this.startTimeScrollOffset+'"]');
+      if(this.startTimeScrollOffset && !this.first) {
+        var top = $(window).scrollTop(),
+            el = this.el.find('[data-time="'+this.startTimeScrollOffset+'"]');
+
         el[0].scrollIntoView();
         $(window).scrollTop(top);
       }
@@ -603,8 +633,21 @@
 
     highlightToday: function() {
       var today = this.currentDate;
+      var dateString = dateFormat('%Y-%n-%j', today);
 
-      this.el.find('.weekly-grid [data-date="' + TimeFormat('%Y-%n-%j', today) + '"]').addClass('weekly-today');
+      this.el.find('.weekly-grid [data-date="' + dateString + '"], .weekly-days [data-date="' + dateString + '"]').addClass('weekly-today');
+    },
+
+    highlightWeekend: function() {
+      this.el.find('.weekly-grid .weekly-day').each(function(){
+        var $this = $(this);
+        var parsedDate = $this.data('date').split('-');
+        var weekDay = new Date(parsedDate[0], parsedDate[1], parsedDate[2]);
+
+        if(weekDay.getDay()%6===0) {
+          $this.addClass('weekly-weekend');
+        }
+      });
     },
 
     registerClickToCreate: function() {
@@ -741,6 +784,11 @@
       var tempStart = Math.floor(mouseOffsetTop / intervalHeight) * intervalHeight;
       var tempEnd = Math.ceil(mouseOffsetTop / intervalHeight) * intervalHeight;
 
+      // Ensure end is at least intervalHeight greater than start
+      if(tempStart === tempEnd) {
+        tempEnd += intervalHeight;
+      }
+
       if(this.pendingEventStart === null) {
         this.pendingEventStart = tempStart;
       }
@@ -803,6 +851,20 @@
       this.changeDate(0);
     },
 
+    jumpTo: function(date) {
+
+      if (this.todayFirst !== false) {
+        this.dayOffset = date.getDay();
+      }
+      this.weekOffset = dateUtils.getWeekOffset(this.currentDate, date);
+
+      var data = this.update();
+      this.emit('weekChange', data);
+
+      return this;
+
+    },
+
     changeDate: function(offsetWeek) {
       if(!offsetWeek) {
         this.weekOffset = 0;
@@ -845,17 +907,17 @@
         bottom: bottomOffset + '%'
       }).append([
         '<button data-action="removeEvent" class="weekly-delete">&times;</button>',
-        '<div class="weekly-event-time">' + TimeFormat('%g:%i', start) + ' - ' + TimeFormat('%g:%i%a', end) + '</div>',
+        '<div class="weekly-event-time">' + dateFormat('%g:%i', start) + ' - ' + dateFormat('%g:%i%a', end) + '</div>',
         '<div class="weekly-event-title">' + event.title + '</div>',
         '<div class="weekly-event-desc">' + event.description + '</div>',
         '<div class="weekly-dragger"></div>'
       ].join(''));
 
-      if (!this.enableResize) {
+      if (this.readOnly || !this.enableResize) {
         eventTemplate.find('.weekly-dragger').remove();
       }
 
-      if (!this.enableDelete) {
+      if (this.readOnly || !this.enableDelete) {
         eventTemplate.find('.weekly-delete').remove();
       }
 
@@ -879,6 +941,8 @@
           'maxFontSize': this.fitTextMax
         });
       }
+
+      this.updateEventScroll(startDate);
     },
 
     toFraction: function(time) {
@@ -973,11 +1037,57 @@
 
     setReadOnly: function(val) {
       this.readOnly = val;
-      this.enableResize = !val;
-      this.enableDelete = !val;
       this.update();
       return this;
 
+    },
+
+    setScrollFirstEvent: function(val) {
+      this.scrollFirstEvent = val;
+      this.update();
+      return this;
+    },
+
+    updateEventScroll: function(startDate) {
+      clearTimeout(this.scrollTimer);
+
+      this.scrollTimer = setTimeout(this.proxy(function(){
+        if(this.scrollFirstEvent) {
+          var top = $(window).scrollTop(),
+              scrollDate = this.scrollFirstEvent,
+              el;
+
+          if(this.scrollFirstEvent === 'today') {
+            scrollDate = TimeFormat('%Y-%n-%j', new Date());
+          } else if(this.scrollFirstEvent instanceof Date) {
+            scrollDate = TimeFormat('%Y-%n-%j', this.scrollFirstEvent);
+          } else if(this.scrollFirstEvent !== 'everyday') {
+            var parsedDate = this.scrollFirstEvent.split('-');
+            scrollDate = TimeFormat('%Y-%n-%j', new Date(parsedDate[0], parsedDate[1] - 1, parsedDate[2]));
+          }
+          
+          if(this.scrollFirstEvent === 'everyday') {
+            el = this.el.find('.weekly-event');
+          } else {
+            el = this.el.find('.weekly-grid [data-date="' + scrollDate + '"] .weekly-event');
+          }
+
+          if(el.length) {
+            var first = this.firstEvent;
+
+            el.each(function(){
+              if(!first || this.offsetTop < first.offsetTop) {
+                first = this;
+              }
+            });
+
+            first.scrollIntoView();
+            $(window).scrollTop(top);
+
+            this.firstEvent = first;
+          }
+        }
+      }), 0);
     }
 
   });
@@ -1002,13 +1112,20 @@
         },
         link: function(scope, el, args) {
           var isUpdating = false;
-          var options = scope.options();
+          var options = scope.options() || {};
+          var fnName = 'weekly';
+          if (typeof args.weeklyMobile !== 'undefined') {
+            fnName = 'weeklyMobile';
+            options.daysToDisplay = 1;
+          }
+          console.log(fnName, options);
           el
             .addClass('weekly')
             .on('weekChange', function(e, data) {
               scope.weekChangeEventFn({ data: data });
             })
             .on('addEvent', function(e, evnt) {
+              console.log(arguments);
               if (!isUpdating) {
                 scope.$apply(function() {
                   scope.model.push(evnt);
@@ -1030,14 +1147,14 @@
                 scope.clickEventFn({ event: scope.model[evnt._index], el: el });
               });
             })
-            .weekly(options);
+            [fnName](options);
 
           if (args.ngModel) {
             scope.$watch('model', function(val) {
               isUpdating = true;
               el
-                .weekly('clearEvents')
-                .weekly('addEvent', val);
+                [fnName]('clearEvents')
+                [fnName]('addEvent', val);
               isUpdating = false;
             }, true);
           }
@@ -1045,7 +1162,7 @@
           if (args.weeklyTimezone) {
             scope.$watch('timezone', function(val) {
               if (val !== null) {
-                el.weekly('setTimezoneOffset', val);
+                el[fnName]('setTimezoneOffset', val);
               }
             });
           }
@@ -1053,7 +1170,7 @@
           if (args.weeklyReadOnly) {
             scope.$watch('readOnly', function(val) {
               if (typeof val !== 'undefined') {
-                el.weekly('setReadOnly', val);
+                el[fnName]('setReadOnly', val);
               }
             });
           }
