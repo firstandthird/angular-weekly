@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.18
+ * v0.0.19
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2014
  * MIT License
@@ -29,14 +29,12 @@
             fnName = 'weeklyMobile';
             options.daysToDisplay = 1;
           }
-          console.log(fnName, options);
           el
             .addClass('weekly')
             .on('weekChange', function(e, data) {
               scope.weekChangeEventFn({ data: data });
             })
             .on('addEvent', function(e, evnt) {
-              console.log(arguments);
               if (!isUpdating) {
                 scope.$apply(function() {
                   scope.model.push(evnt);
