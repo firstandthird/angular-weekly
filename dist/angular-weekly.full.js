@@ -1,13 +1,13 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.19
+ * v0.1.0
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2014
  * MIT License
 */
 /*global jQuery */
 /*!
-* FitText.js 1.1
+* FitText.js 1.2
 *
 * Copyright 2011, Dave Rupert http://daverupert.com
 * Released under the WTFPL license
@@ -143,9 +143,9 @@
 
 })(window);/*!
  * fidel - a ui view controller
- * v2.2.3
+ * v2.2.5
  * https://github.com/jgallen23/fidel
- * copyright Greg Allen 2013
+ * copyright Greg Allen 2014
  * MIT License
 */
 (function(w, $) {
@@ -157,6 +157,7 @@
   Fidel.prototype.__init = function(options) {
     $.extend(this, this.obj);
     this.id = _id++;
+    this.namespace = '.fidel' + this.id;
     this.obj.defaults = this.obj.defaults || {};
     $.extend(this, this.obj.defaults, options);
     $('body').trigger('FidelPreInit', this);
@@ -171,8 +172,8 @@
   Fidel.prototype.setElement = function(el) {
     this.el = el;
     this.getElements();
-    this.delegateEvents();
     this.dataElements();
+    this.delegateEvents();
     this.delegateActions();
   };
 
@@ -204,7 +205,6 @@
   };
 
   Fidel.prototype.delegateEvents = function() {
-    var self = this;
     if (!this.events)
       return;
     for (var key in this.events) {
@@ -215,12 +215,12 @@
       var method = this.proxy(this[methodName]);
 
       if (selector === '') {
-        this.el.on(eventName, method);
+        this.el.on(eventName + this.namespace, method);
       } else {
         if (this[selector] && typeof this[selector] != 'function') {
-          this[selector].on(eventName, method);
+          this[selector].on(eventName + this.namespace, method);
         } else {
-          this.el.on(eventName, selector, method);
+          this.el.on(eventName + this.namespace, selector, method);
         }
       }
     }
@@ -228,7 +228,7 @@
 
   Fidel.prototype.delegateActions = function() {
     var self = this;
-    self.el.on('click', '[data-action]', function(e) {
+    self.el.on('click'+this.namespace, '[data-action]', function(e) {
       var el = $(this);
       var action = el.attr('data-action');
       if (self[action]) {
@@ -238,15 +238,15 @@
   };
 
   Fidel.prototype.on = function(eventName, cb) {
-    this.el.on(eventName+'.fidel'+this.id, cb);
+    this.el.on(eventName+this.namespace, cb);
   };
 
   Fidel.prototype.one = function(eventName, cb) {
-    this.el.one(eventName+'.fidel'+this.id, cb);
+    this.el.one(eventName+this.namespace, cb);
   };
 
   Fidel.prototype.emit = function(eventName, data, namespaced) {
-    var ns = (namespaced) ? '.fidel'+this.id : '';
+    var ns = (namespaced) ? this.namespace : '';
     this.el.trigger(eventName+ns, data);
   };
 
@@ -270,7 +270,7 @@
   Fidel.prototype.destroy = function() {
     this.el.empty();
     this.emit('destroy');
-    this.el.unbind('.fidel'+this.id);
+    this.el.unbind(this.namespace);
   };
 
   Fidel.declare = function(obj) {
@@ -390,7 +390,7 @@
 
 /*!
  * fidel-template - A fidel plugin to render a clientside template
- * v0.2.1
+ * v0.3.0
  * https://github.com/jgallen23/fidel-template
  * copyright Greg Allen 2013
  * MIT License
@@ -399,15 +399,16 @@
 (function(Fidel) {
   Fidel.template = template.noConflict();
 
-  Fidel.prototype.render = function(data) {
+  Fidel.prototype.render = function(data, el) {
     var tmpl = (this.template) ? this.template : $('#'+this.templateId).html();
-    this.el.html(Fidel.template(tmpl, data));
+    el = el || this.el;
+    el.html(Fidel.template(tmpl, data));
   };
 })(window.Fidel);
 
 /*!
  * weekly - jQuery Weekly Calendar Plugin
- * v0.0.47
+ * v0.1.0
  * https://github.com/firstandthird/weekly
  * copyright First + Third 2014
  * MIT License
@@ -493,7 +494,7 @@
 
       first.setDate(first.getDate() + dayOffset);
 
-      var span = dateFormat('%M %d', first);
+      var span = dateFormat('%D, %M %d', first);
       return span;
     },
     realTimezoneOffset: function(offset) {
@@ -542,8 +543,10 @@
       allowPastEventCreation: false,
       timezoneOffset: 0,
       utcOffset: ((new Date()).getTimezoneOffset() / -60),
+      selectableDates: null,
       todayFirst: false,
       dayOffset: 0,
+      allowOverlap: true,
 
       // How many minutes to draw a divider line
       interval: 30
@@ -569,6 +572,22 @@
       if (this.autoRender) {
         var data = this.update();
         this.emit('weekChange', data);
+      }
+
+      if (this.selectableDates !== null){
+        if ($.type(this.selectableDates) === 'function'){
+          this.canAdd = this.selectableDates;
+        }
+        else {
+          this.canAdd = function (date) {
+            return this.selectableDates.indexOf(date) > -1;
+          };
+        }
+      }
+      else {
+        this.canAdd = function () {
+          return true;
+        };
       }
     },
 
@@ -671,7 +690,7 @@
 
         var currentTarget = $(event.currentTarget);
 
-        if(!this.allowPastEventCreation && dateUtils.isPastDate(currentTarget.data('date'))) {
+        if((!this.allowPastEventCreation && dateUtils.isPastDate(currentTarget.data('date'))) || !this.canAdd(currentTarget.data('date'))) {
           return;
         }
 
@@ -713,7 +732,7 @@
       gridDays.on('click', this.proxy(function(event){
         var target = $(event.currentTarget);
 
-        if(!this.allowPastEventCreation && dateUtils.isPastDate(target.data('date'))) {
+        if((!this.allowPastEventCreation && dateUtils.isPastDate(target.data('date'))) || !this.canAdd(target.data('date'))) {
           return;
         }
 
@@ -784,6 +803,13 @@
       var tempStart = Math.floor(mouseOffsetTop / intervalHeight) * intervalHeight;
       var tempEnd = Math.ceil(mouseOffsetTop / intervalHeight) * intervalHeight;
 
+      var dateSplit = target.data('date').split('-');
+
+      var temp = {
+        start: this.pendingEventStart,
+        end: this.pendingEventEnd
+      };
+
       // Ensure end is at least intervalHeight greater than start
       if(tempStart === tempEnd) {
         tempEnd += intervalHeight;
@@ -797,6 +823,19 @@
         this.pendingEventEnd = tempEnd;
       }
 
+      var startTime = ((this.pendingEventStart / hourHeight) || 0) + this.startTime;
+      var endTime = ((this.pendingEventEnd / hourHeight) || 1) + this.startTime;
+
+      var start = new Date(dateSplit[0], dateSplit[1], dateSplit[2], startTime - this.timezoneOffset, this.fromDecimal(startTime));
+      var end = new Date(dateSplit[0], dateSplit[1], dateSplit[2], endTime - this.timezoneOffset, this.fromDecimal(endTime));
+
+      if(!this.allowOverlap && this.overlaps(start.getTime(), end.getTime())) {
+        // don't drag anymore and reset values
+        this.pendingEventStart = temp.start;
+        this.pendingEventEnd = temp.end;
+        return;
+      }
+
       if(!this.pendingEvent) {
         target.append('<div class="weekly-event-pending"></div>');
         this.pendingEvent = target.find('.weekly-event-pending');
@@ -808,8 +847,8 @@
         bottom: dayHeight - this.pendingEventEnd
       });
 
-      this.pendingEvent.data('starttime', ((this.pendingEventStart / hourHeight) || 0) + this.startTime);
-      this.pendingEvent.data('endtime', ((this.pendingEventEnd / hourHeight) || 1) + this.startTime);
+      this.pendingEvent.data('starttime', startTime);
+      this.pendingEvent.data('endtime', endTime);
     },
 
     modifyEvent: function(event) {
@@ -822,17 +861,27 @@
 
       var tempEnd = Math.ceil(mouseOffsetTop / intervalHeight) * intervalHeight;
 
+      var duration = target.outerHeight() / hourHeight;
+      var start = new Date(target.data('start'));
+      var end = new Date(target.data('start'));
+          end.setHours(end.getHours() + ~~(duration));
+          end.setMinutes(this.fromDecimal(duration));
+
+      if(this.intersects(target).length) {
+        this.currentDragger.trigger('mouseup');
+        target.css({
+          bottom: dayHeight - tempEnd + intervalHeight
+        });
+        return;
+      }
+
+      target.data('end', end);
+
       if(tempEnd < (targetOffset.top + dayHeight)) {
         target.css({
           bottom: dayHeight - tempEnd
         });
       }
-
-      var duration = target.outerHeight() / hourHeight;
-      var end = new Date(target.data('start'));
-      end.setHours(end.getHours() + ~~(duration));
-      end.setMinutes(this.fromDecimal(duration));
-      target.data('end', end);
 
       this.events[target.data('_index')].end = end;
 
@@ -880,8 +929,10 @@
       var start = new Date(event.start.getTime());
       var end = new Date(event.end.getTime());
 
-      start.setHours(start.getHours() + this.timezoneOffset);
-      end.setHours(end.getHours() + this.timezoneOffset);
+      start.setHours(start.getHours() + ~~this.timezoneOffset);
+      end.setHours(end.getHours() + ~~this.timezoneOffset);
+      start.setMinutes(start.getMinutes() + (60 * (this.timezoneOffset % 1)));
+      end.setMinutes(end.getMinutes() + (60 * (this.timezoneOffset % 1)));
 
       var startDate = start.getFullYear() + "-" + start.getMonth() + "-" + start.getDate();
       var startTime = start.toTimeString().slice(0,5);
@@ -991,6 +1042,11 @@
 
       event._index = this.events.length;
 
+      if(!this.allowOverlap && this.overlaps(event.start.getTime(), event.end.getTime())) {
+        this.emit('addEventOverlapError', [event]);
+        return;
+      }
+
       if (event.start.getHours() >= this.startTime && event.end.getHours() <= (this.endTime + 12)) {
         this.renderEvent(event);
       }
@@ -1088,6 +1144,36 @@
           }
         }
       }), 0);
+    },
+
+    overlaps: function(start, end, id) {
+      for(var i = this.events.length; i--;) {
+        if(parseInt(id, 10) === i) continue;
+
+        if(end > this.events[i].start.getTime() && start < this.events[i].end.getTime()) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+
+    intersects: function(target) {
+      var matches = [];
+      var offset = target.offset();
+      var targetY = [offset.top, offset.top + target.outerHeight()];
+
+      target.siblings('.weekly-event').each(function() {
+        var $this = $(this);
+        var pos = $this.offset();
+        var sibY = [pos.top, pos.top + $this.outerHeight()];
+
+        if(targetY[0] < sibY[1] && targetY[1] > sibY[0]) {
+          matches.push($this);
+        }
+
+      });
+      return matches;
     }
 
   });

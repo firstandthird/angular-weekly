@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.0.19
+ * v0.1.0
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2014
  * MIT License
