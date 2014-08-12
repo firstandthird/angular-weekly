@@ -8,7 +8,7 @@
   "main": "dist/angular-weekly.js",
   "dependencies": {
     "angular": "~1.2.0",
-    "weekly": "~0.1.0"
+    "weekly": "~0.2.0"
   },
   "devDependencies": {
     "assert": "*"
