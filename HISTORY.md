@@ -1,4 +1,11 @@
 
+0.2.0 / 2014-08-12 
+==================
+
+  * added example for selectable dates
+  * added selectableDates to directive
+  * updated weekly dep
+
 0.0.19 / 2014-03-03 
 ==================
 

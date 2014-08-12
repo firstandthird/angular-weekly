@@ -1,6 +1,6 @@
 /*!
  * angular-weekly - Weekly Calendar Angular directive
- * v0.1.0
+ * v0.2.0
  * https://github.com/jgallen23/angular-weekly/
  * copyright Greg Allen 2014
  * MIT License
@@ -13,6 +13,7 @@
         require: 'ngModel',
         scope: {
           model: '=ngModel',
+          selectableDates: '=weeklySelectableDates',
           options: '&weekly',
           weekChangeEventFn: '&weeklyChange',
           addEventFn: '&weeklyAdd',
@@ -81,6 +82,12 @@
               if (typeof val !== 'undefined') {
                 el[fnName]('setReadOnly', val);
               }
+            });
+          }
+
+          if (args.weeklySelectableDates) {
+            scope.$watch('selectableDates', function(val) {
+              el[fnName]('setSelectableDates', val);
             });
           }
         }
