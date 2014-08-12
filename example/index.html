@@ -24,8 +24,6 @@
   </head>
   <body>
     <div ng-controller="MainController">
-      <div weekly ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)" weekly-timezone="timezoneOffset" weekly-read-only="readonly"></div>
-      <div weekly ng-model="events" weekly-mobile weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)" weekly-timezone="timezoneOffset" weekly-read-only="readonly"></div>
       <div class="utils">
         <span>Timezone Select</span>
         <select ng-model="timezoneOffset">
@@ -35,7 +33,10 @@
         </select>
         <button ng-click="addAnotherEvent()">Add Event</button>
         <button ng-click="readonly = !readonly">Readonly {{!readonly && 'Off' || 'On'}}</button>
+        <button ng-click="onlyToday = !onlyToday">Only Today {{!onlyToday && 'Off' || 'On'}}</button>
       </div>
+      <div weekly ng-model="events" weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)" weekly-timezone="timezoneOffset" weekly-read-only="readonly" weekly-selectable-dates="selectableDates"></div>
+      <div weekly ng-model="events" weekly-mobile weekly-add="addEvent(event)" weekly-remove="removeEvent(event)" weekly-change="weekChanged(data)" weekly-click="eventClick(event, el)" weekly-timezone="timezoneOffset" weekly-read-only="readonly"></div>
     </div>
   </body>
 </html>
